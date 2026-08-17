@@ -1,39 +1,34 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import db from '../database/database'
+import { eq } from 'drizzle-orm'
+import { db, schema } from '../database/database'
 import type { UpdateProgressDto } from './progress.schema'
-
-export interface ProgressRecord {
-  id: string
-  status: string
-}
 
 @Injectable()
 export class ProgressService {
-  getAll(): ProgressRecord[] {
-    const rows = db.prepare('SELECT id, status FROM progress ORDER BY id').all()
-    return rows as unknown as ProgressRecord[]
+  async getAll() {
+    return db.select().from(schema.progress).orderBy(schema.progress.id).all()
   }
 
-  getOne(id: string): ProgressRecord {
-    const row = db.prepare('SELECT id, status FROM progress WHERE id = ?').get(id) as unknown as
-      ProgressRecord | undefined
+  async getOne(id: string) {
+    const row = await db.select().from(schema.progress).where(eq(schema.progress.id, id)).get()
     if (!row) {
       throw new NotFoundException(`progress "${id}" not found`)
     }
     return row
   }
 
-  upsert(id: string, dto: UpdateProgressDto): ProgressRecord {
-    db.prepare(
-      `INSERT INTO progress (id, status) VALUES (?, ?)
-       ON CONFLICT(id) DO UPDATE SET status = excluded.status`,
-    ).run(id, dto.status)
+  async upsert(id: string, dto: UpdateProgressDto) {
+    await db
+      .insert(schema.progress)
+      .values({ id, status: dto.status })
+      .onConflictDoUpdate({ target: schema.progress.id, set: { status: dto.status } })
+      .run()
     return this.getOne(id)
   }
 
-  remove(id: string): void {
-    const result = db.prepare('DELETE FROM progress WHERE id = ?').run(id)
-    if (result.changes === 0) {
+  async remove(id: string): Promise<void> {
+    const result = await db.delete(schema.progress).where(eq(schema.progress.id, id)).run()
+    if (result.rowsAffected === 0) {
       throw new NotFoundException(`progress "${id}" not found`)
     }
   }

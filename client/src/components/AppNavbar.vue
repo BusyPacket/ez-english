@@ -2,8 +2,10 @@
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
+import { useUserStore } from '@/stores/user'
 
 const themeStore = useThemeStore()
+const userStore = useUserStore()
 const router = useRouter()
 const route = useRoute()
 
@@ -27,6 +29,10 @@ function handleMenuSelect(key: string) {
       <div class="brand">📚 ez-english</div>
       <n-menu mode="horizontal" :options="menuOptions" :value="activeKey" @update:value="handleMenuSelect" />
       <div class="spacer" />
+      <n-space v-if="userStore.isLoggedIn" align="center">
+        <n-a :strong="true" @click="router.push('/profile')">{{ userStore.displayName }}</n-a>
+      </n-space>
+      <n-button v-else quaternary size="small" @click="router.push('/login')">登录/注册</n-button>
       <n-button quaternary circle :title="themeStore.isDark ? '切换到浅色模式' : '切换到深色模式'" @click="themeStore.toggle">
         <template #icon>
           <span class="theme-icon">{{ themeStore.isDark ? '🌙' : '☀️' }}</span>

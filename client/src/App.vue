@@ -10,10 +10,12 @@ const theme = computed(() => (themeStore.isDark ? darkTheme : null))
 <template>
   <n-config-provider :theme="theme">
     <n-global-style />
-    <AppNavbar />
-    <n-layout class="content">
-      <router-view />
-    </n-layout>
+    <n-message-provider>
+      <AppNavbar />
+      <n-layout class="content">
+        <router-view />
+      </n-layout>
+    </n-message-provider>
   </n-config-provider>
 </template>
 

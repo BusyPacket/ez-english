@@ -1,10 +1,22 @@
 import { Module } from '@nestjs/common'
+import { JwtModule } from '@nestjs/jwt'
 import { AppController } from './app.controller'
 import { AppService } from './app.service'
 import { ProgressModule } from './progress/progress.module'
+import { AuthModule } from './auth/auth.module'
+import { UserModule } from './users/user.module'
 
 @Module({
-  imports: [ProgressModule],
+  imports: [
+    ProgressModule,
+    UserModule,
+    AuthModule,
+    JwtModule.register({
+      global: true,
+      secret: process.env.JWT_SECRET ?? 'ez-english-dev-secret',
+      signOptions: { expiresIn: '30d' },
+    }),
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

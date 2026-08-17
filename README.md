@@ -9,7 +9,7 @@
 | 端             | 技术                                                                  |
 | -------------- | --------------------------------------------------------------------- |
 | 前端 `client/` | Vue 3 · TypeScript · Vite · Pinia · Vue Router · Naive UI（自动导入） |
-| 后端 `server/` | NestJS · better-sqlite3 · Zod（DTO 校验）· REST API                   |
+| 后端 `server/` | NestJS · node:sqlite · Drizzle ORM · Zod（DTO 校验）· REST API        |
 | 工程化         | pnpm workspace（monorepo）                                            |
 
 ## 目录结构
@@ -28,7 +28,7 @@ ez-english/
 ├── server/                  # 后端（NestJS + SQLite）
 │   ├── src/
 │   │   ├── common/          # 通用（Zod 校验管道等）
-│   │   ├── database/        # SQLite 连接与建表
+│   │   ├── database/        # Drizzle schema 与数据库连接
 │   │   ├── progress/        # 学习进度模块（示例 CRUD）
 │   │   ├── app.module.ts
 │   │   └── main.ts          # 入口（端口 3000，前缀 /api）
@@ -61,15 +61,27 @@ pnpm type-check     # 前端 vue-tsc 类型检查
 
 启动后，REST 接口统一挂在 `/api` 前缀下：
 
-| 方法   | 路径                | 说明                                                       |
-| ------ | ------------------- | ---------------------------------------------------------- |
-| GET    | `/api/health`       | 健康检查                                                   |
-| GET    | `/api/progress`     | 获取全部学习进度                                           |
-| GET    | `/api/progress/:id` | 获取单个考点进度                                           |
-| PUT    | `/api/progress/:id` | 更新/创建进度（body: `{ "status": "learned" }`，Zod 校验） |
-| DELETE | `/api/progress/:id` | 删除进度                                                   |
+| 方法   | 路径                 | 说明                                                       |
+| ------ | -------------------- | ---------------------------------------------------------- |
+| GET    | `/api/health`        | 健康检查                                                   |
+| POST   | `/api/auth/register` | 注册（body: `{ "email", "password" }`，Zod 校验）          |
+| GET    | `/api/progress`      | 获取全部学习进度                                           |
+| GET    | `/api/progress/:id`  | 获取单个考点进度                                           |
+| PUT    | `/api/progress/:id`  | 更新/创建进度（body: `{ "status": "learned" }`，Zod 校验） |
+| DELETE | `/api/progress/:id`  | 删除进度                                                   |
 
 SQLite 数据库文件位于 `server/data/ez-english.db`（首次启动自动创建，已 gitignore）。
+
+## 用户表需求
+
+| 需求     | 说明                                                                       |
+| -------- | -------------------------------------------------------------------------- |
+| 用户名   | 即邮箱（`email`），唯一                                                    |
+| 密码     | 至少 6 位（存储为 scrypt 哈希）                                            |
+| 主键     | `id`，UUID（应用生成，`node:crypto` 的 `randomUUID`）                      |
+| 昵称     | `nickname`，备用字段，可空                                                 |
+| 角色     | StrEnum：`user` 普通用户 / `member` 会员用户（保留）/ `admin` 管理员       |
+| 注册时间 | `created_at`，带时区的 UTC 时间（ISO 8601，如 `2026-08-17T09:14:15.084Z`） |
 
 ## 数据流
 
@@ -78,7 +90,7 @@ client/ (Vue SPA)
    │  HTTP /api/*
    ▼
 server/ (NestJS)
-   │  better-sqlite3
+   │  Drizzle ORM (node:sqlite)
    ▼
 server/data/ez-english.db (SQLite)
 ```

@@ -1,20 +1,17 @@
-import { DatabaseSync } from 'node:sqlite'
+import { createClient } from '@libsql/client'
+import { drizzle } from 'drizzle-orm/libsql'
 import { existsSync, mkdirSync } from 'node:fs'
 import { join } from 'node:path'
+import * as schema from './schema'
 
 const dataDir = process.env.DB_DIR ?? join(process.cwd(), 'data')
 if (!existsSync(dataDir)) {
   mkdirSync(dataDir, { recursive: true })
 }
 
-const db = new DatabaseSync(join(dataDir, 'ez-english.db'))
-db.exec('PRAGMA journal_mode = WAL')
+const dbFile = join(dataDir, 'ez-english.db').replace(/\\/g, '/')
+const client = createClient({ url: `file:${dbFile}` })
 
-db.exec(`
-  CREATE TABLE IF NOT EXISTS progress (
-    id TEXT PRIMARY KEY,
-    status TEXT NOT NULL DEFAULT 'todo'
-  );
-`)
+export const db = drizzle(client, { schema })
 
-export default db
+export { schema }

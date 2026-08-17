@@ -8,17 +8,17 @@ export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
 
   @Get()
-  getAll() {
+  async getAll() {
     return this.progressService.getAll()
   }
 
   @Get(':id')
-  getOne(@Param('id') id: string) {
+  async getOne(@Param('id') id: string) {
     return this.progressService.getOne(id)
   }
 
   @Put(':id')
-  upsert(
+  async upsert(
     @Param('id') id: string,
     @Body(new ZodValidationPipe(updateProgressSchema)) dto: UpdateProgressDto,
   ) {
@@ -27,7 +27,7 @@ export class ProgressController {
 
   @Delete(':id')
   @HttpCode(204)
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string) {
     return this.progressService.remove(id)
   }
 }

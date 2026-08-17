@@ -7,14 +7,24 @@ export interface ApiError {
 }
 
 export async function api<T>(path: string, options: RequestInit = {}): Promise<T> {
+  const token = localStorage.getItem('ez-token')
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    ...(options.headers as Record<string, string> | undefined),
+  }
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json', ...(options.headers ?? {}) },
+    headers,
     ...options,
   })
   if (!res.ok) {
     const body = (await res.json().catch(() => ({}))) as ApiError
     const msg = body.message ?? `请求失败 (${res.status})`
     throw new Error(Array.isArray(msg) ? msg.join('；') : msg)
+  }
+  // 204 No Content：无响应体，跳过 JSON 解析
+  if (res.status === 204) {
+    return undefined as T
   }
   return (await res.json()) as T
 }

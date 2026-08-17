@@ -1,6 +1,6 @@
-import { ConflictException, Injectable } from '@nestjs/common'
+import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { count, eq, like, or } from 'drizzle-orm'
 import { db, schema } from '../database/database'
 import { UserRole, type RegisterDto } from './user.schema'
 
@@ -8,6 +8,37 @@ import { UserRole, type RegisterDto } from './user.schema'
 export class UserService {
   async findByEmail(email: string) {
     return db.select().from(schema.users).where(eq(schema.users.email, email)).get()
+  }
+
+  /** 分页查询用户列表（不含密码），支持按邮箱/昵称模糊搜索 */
+  async listUsers(page = 1, pageSize = 10, keyword = '') {
+    const where = keyword
+      ? or(like(schema.users.email, `%${keyword}%`), like(schema.users.nickname, `%${keyword}%`))
+      : undefined
+    const offset = (page - 1) * pageSize
+    const items = await db
+      .select({
+        id: schema.users.id,
+        email: schema.users.email,
+        nickname: schema.users.nickname,
+        role: schema.users.role,
+        createdAt: schema.users.createdAt,
+      })
+      .from(schema.users)
+      .where(where)
+      .orderBy(schema.users.createdAt)
+      .limit(pageSize)
+      .offset(offset)
+      .all()
+    const [{ value: total }] = await db.select({ value: count() }).from(schema.users).where(where)
+    return { items, total: Number(total), page, pageSize }
+  }
+
+  async remove(id: string) {
+    const result = await db.delete(schema.users).where(eq(schema.users.id, id)).run()
+    if (result.rowsAffected === 0) {
+      throw new NotFoundException('用户不存在')
+    }
   }
 
   async create(dto: RegisterDto) {

@@ -6,6 +6,7 @@ import ExamPaperView from '@/views/ExamPaperView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ProfileView from '@/views/ProfileView.vue'
+import AdminView from '@/views/AdminView.vue'
 import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
@@ -49,15 +50,24 @@ const router = createRouter({
       name: 'profile',
       component: ProfileView,
     },
+    {
+      path: '/admin',
+      name: 'admin',
+      component: AdminView,
+      meta: { adminOnly: true },
+    },
   ],
 })
 
-// 路由守卫：除首页、登录/注册外，其余页面均需登录
+// 路由守卫：除首页、登录/注册外均需登录；admin 页面仅管理员可进
 router.beforeEach((to) => {
   if (to.meta.public) return
   const userStore = useUserStore()
   if (!userStore.isLoggedIn) {
     return { name: 'login', query: { redirect: to.fullPath } }
+  }
+  if (to.meta.adminOnly && userStore.user?.role !== 'admin') {
+    return { name: 'home' }
   }
 })
 

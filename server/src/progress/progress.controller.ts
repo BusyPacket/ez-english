@@ -1,33 +1,34 @@
-import { Body, Controller, Delete, Get, HttpCode, Param, Put } from '@nestjs/common'
+import { Body, Controller, Get, Param, Put, Req, UseGuards } from '@nestjs/common'
+import { JwtAuthGuard } from '../common/jwt-auth.guard'
 import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import { updateProgressSchema, type UpdateProgressDto } from './progress.schema'
 import { ProgressService } from './progress.service'
 
+interface AuthedRequest {
+  user: { sub: string }
+}
+
 @Controller('progress')
+@UseGuards(JwtAuthGuard)
 export class ProgressController {
   constructor(private readonly progressService: ProgressService) {}
 
   @Get()
-  async getAll() {
-    return this.progressService.getAll()
+  getAll(@Req() request: AuthedRequest) {
+    return this.progressService.getAll(request.user.sub)
   }
 
-  @Get(':id')
-  async getOne(@Param('id') id: string) {
-    return this.progressService.getOne(id)
+  @Get('summary')
+  getSummary(@Req() request: AuthedRequest) {
+    return this.progressService.getSummary(request.user.sub)
   }
 
-  @Put(':id')
-  async upsert(
-    @Param('id') id: string,
+  @Put(':pointId')
+  upsert(
+    @Param('pointId') pointId: string,
     @Body(new ZodValidationPipe(updateProgressSchema)) dto: UpdateProgressDto,
+    @Req() request: AuthedRequest,
   ) {
-    return this.progressService.upsert(id, dto)
-  }
-
-  @Delete(':id')
-  @HttpCode(204)
-  async remove(@Param('id') id: string) {
-    return this.progressService.remove(id)
+    return this.progressService.upsert(request.user.sub, pointId, dto)
   }
 }

@@ -1,23 +1,20 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import {
-  knowledgeSections,
-  STATUS_OPTIONS,
-  totalPointCount,
-  type KnowledgeStatus,
-} from '@/data/knowledgePoints'
+import { computed, onMounted } from 'vue'
+import { knowledgeSections, STATUS_OPTIONS, type KnowledgeStatus } from '@/data/knowledgePoints'
 import { useProgressStore } from '@/stores/progress'
 
 const progressStore = useProgressStore()
 
-const learnedCount = computed(
-  () => Object.values(progressStore.statuses).filter((s) => s === 'learned').length,
-)
-const masteredCount = computed(
-  () => Object.values(progressStore.statuses).filter((s) => s === 'mastered').length,
-)
-const doneCount = computed(() => learnedCount.value + masteredCount.value)
-const percent = computed(() => Math.round((doneCount.value / totalPointCount) * 100))
+// 挂载时从后端拉取当前用户的学习进度与汇总（百分比由后端计算）
+onMounted(() => {
+  progressStore.syncFromServer()
+  progressStore.fetchSummary()
+})
+
+const totalPointCount = computed(() => progressStore.summary?.total ?? 0)
+const learnedCount = computed(() => progressStore.summary?.counts.learned ?? 0)
+const masteredCount = computed(() => progressStore.summary?.counts.mastered ?? 0)
+const percent = computed(() => progressStore.summary?.masteredPercent ?? 0)
 const progressColor = computed(() => {
   if (percent.value >= 70) return '#18a058'
   if (percent.value >= 30) return '#f0a020'

@@ -1,4 +1,4 @@
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 // 用户表（Drizzle schema，单一权威定义）
 export const users = sqliteTable('users', {
@@ -14,11 +14,19 @@ export const users = sqliteTable('users', {
   createdAt: text('created_at').notNull(),
 })
 
-// 学习进度表
-export const progress = sqliteTable('progress', {
-  id: text('id').primaryKey(),
-  status: text('status').notNull().default('todo'),
-})
+// 学习进度表（按用户维度：user_id + point_id 联合主键）
+export const progress = sqliteTable(
+  'progress',
+  {
+    userId: text('user_id').notNull(),
+    pointId: text('point_id').notNull(),
+    // 学习状态：todo / learning / learned / mastered（对应共享包 KnowledgeStatus 枚举值）
+    status: text('status').notNull().default('todo'),
+    // 最近更新时间：带时区的 UTC 时间（ISO 8601）
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.pointId] })],
+)
 
 // 用户反馈表
 export const feedback = sqliteTable('feedback', {

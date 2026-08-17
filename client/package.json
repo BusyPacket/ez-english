@@ -14,6 +14,7 @@
     "format": "prettier --write --experimental-cli src/"
   },
   "dependencies": {
+    "@ez-english/shared": "workspace:*",
     "dayjs": "^1.11.22",
     "naive-ui": "^2.44.1",
     "pinia": "^4.0.2",

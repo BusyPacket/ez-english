@@ -61,6 +61,45 @@ function switchYear(year: number) {
   loadPaper(year)
 }
 
+interface TocItem {
+  partId: string
+  blockId: string
+  label: string
+}
+
+/** 目录：所有题型及其题号范围 */
+const tocItems = computed<TocItem[]>(() => {
+  if (!paper.value) return []
+  const items: TocItem[] = []
+  for (const part of paper.value.parts) {
+    for (const block of part.blocks) {
+      const nos: number[] = []
+      block.passages?.forEach((p) => p.questions.forEach((q) => nos.push(q.no)))
+      block.questions?.forEach((q) => nos.push(q.no))
+      const type = block.type ?? ''
+      const range = nos.length ? `${Math.min(...nos)}-${Math.max(...nos)}` : ''
+      items.push({
+        partId: part.id,
+        blockId: block.id,
+        label: range ? `${type} ${range}` : block.title,
+      })
+    }
+  }
+  return items
+})
+
+/** 目录跳转：展开所在 Part 并滚动到对应题型 */
+function jumpToBlock(partId: string, blockId: string) {
+  expandedNames.value = [partId]
+  highlightBlock.value = blockId
+  // 等 collapse 内容渲染完成后再滚动（n-collapse 折叠内容为懒渲染）
+  nextTick(() => {
+    setTimeout(() => {
+      document.getElementById(`block-${blockId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    }, 150)
+  })
+}
+
 onMounted(async () => {
   try {
     years.value = await api<{ year: number; title: string }[]>('/papers')
@@ -100,6 +139,17 @@ onMounted(async () => {
             <n-switch v-model:value="showAnswer" size="small" />
             <span>显示答案</span>
           </div>
+        </n-space>
+      </n-card>
+
+      <n-card class="toc-card" size="small">
+        <div class="toc-title">📑 目录</div>
+        <n-space wrap :size="8">
+          <n-button v-for="item in tocItems" :key="item.blockId" size="small"
+            :type="highlightBlock === item.blockId ? 'primary' : 'default'" :secondary="highlightBlock !== item.blockId"
+            @click="jumpToBlock(item.partId, item.blockId)">
+            {{ item.label }}
+          </n-button>
         </n-space>
       </n-card>
 
@@ -207,6 +257,17 @@ onMounted(async () => {
 
 .paper-header {
   margin-bottom: 16px;
+}
+
+.toc-card {
+  margin-bottom: 16px;
+  background: color-mix(in srgb, var(--n-primary-color) 4%, transparent);
+}
+
+.toc-title {
+  font-weight: 600;
+  margin-bottom: 10px;
+  font-size: 14px;
 }
 
 .block {

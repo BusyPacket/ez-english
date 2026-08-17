@@ -6,6 +6,8 @@ import type { ExamPaper, ExamPart } from '@/types/exam'
 
 const route = useRoute()
 const paper = ref<ExamPaper | null>(null)
+const years = ref<{ year: number; title: string }[]>([])
+const selectedYear = ref(2025)
 const loading = ref(true)
 const error = ref('')
 const showAnswer = ref(false)
@@ -29,10 +31,11 @@ function partScore(part: ExamPart) {
   return part.blocks.map((b) => b.score).join(' + ')
 }
 
-onMounted(async () => {
+async function loadPaper(year: number) {
   loading.value = true
+  error.value = ''
   try {
-    paper.value = await api<ExamPaper>('/papers/2025')
+    paper.value = await api<ExamPaper>(`/papers/${year}`)
     const targetBlock = route.query.block as string | undefined
     if (targetBlock) {
       const targetPart =
@@ -49,6 +52,22 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+}
+
+function switchYear(year: number) {
+  if (year === selectedYear.value) return
+  selectedYear.value = year
+  highlightBlock.value = ''
+  loadPaper(year)
+}
+
+onMounted(async () => {
+  try {
+    years.value = await api<{ year: number; title: string }[]>('/papers')
+  } catch {
+    years.value = []
+  }
+  await loadPaper(selectedYear.value)
 })
 </script>
 
@@ -60,18 +79,28 @@ onMounted(async () => {
     <n-alert v-else-if="error" type="error" :title="error" />
     <template v-else-if="paper">
       <n-card class="paper-header">
-        <n-h2>2025 年浙江专升本英语真题</n-h2>
+        <n-h2>{{ selectedYear }} 年浙江专升本英语真题</n-h2>
         <n-p>{{ paper.title }}</n-p>
-        <n-space>
-          <n-tag type="info">{{ paper.year }} 年真题</n-tag>
-          <n-tag type="warning">总分 150 分</n-tag>
-          <n-tag>考试时长 150 分钟</n-tag>
-          <n-tag>题目 {{ totalQuestions }} 道</n-tag>
+        <n-space vertical :size="12">
+          <n-space>
+            <n-button-group size="small">
+              <n-button v-for="y in years" :key="y.year" :type="selectedYear === y.year ? 'primary' : 'default'"
+                :secondary="selectedYear !== y.year" @click="switchYear(y.year)">
+                {{ y.year }} 年
+              </n-button>
+            </n-button-group>
+          </n-space>
+          <n-space>
+            <n-tag type="info">{{ paper.year }} 年真题</n-tag>
+            <n-tag type="warning">总分 150 分</n-tag>
+            <n-tag>考试时长 150 分钟</n-tag>
+            <n-tag>题目 {{ totalQuestions }} 道</n-tag>
+          </n-space>
+          <div class="answer-toggle">
+            <n-switch v-model:value="showAnswer" size="small" />
+            <span>显示答案</span>
+          </div>
         </n-space>
-        <div class="answer-toggle">
-          <n-switch v-model:value="showAnswer" size="small" />
-          <span>显示答案</span>
-        </div>
       </n-card>
 
       <n-collapse v-model:expanded-names="expandedNames">

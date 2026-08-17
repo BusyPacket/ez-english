@@ -9,7 +9,7 @@ export const examPaper2025: ExamPaper = {
   parts: [
     {
       id: 'reading',
-      title: 'Part Reading Comprehension (60 points, 60 minutes)',
+      title: 'Part I Reading Comprehension (60 points, 60 minutes)',
       score: '60 分',
       blocks: [
         {
@@ -881,7 +881,7 @@ Smiling boosts immunity (免疫力). A ... so ... if you want to stay well, it m
     },
     {
       id: 'writing',
-      title: 'Part Writing (30 points, 30 minutes)',
+      title: 'Part IV Writing (30 points, 30 minutes)',
       score: '30 分',
       blocks: [
         {

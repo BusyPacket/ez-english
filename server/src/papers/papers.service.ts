@@ -1,9 +1,10 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { examPaper2024 } from './examPaper2024'
 import { examPaper2025 } from './examPaper2025'
 import type { ExamPaper } from './exam.types'
 
 // 未来新增年份：在此数组追加即可
-const papers: ExamPaper[] = [examPaper2025]
+const papers: ExamPaper[] = [examPaper2024, examPaper2025]
 
 @Injectable()
 export class PapersService {

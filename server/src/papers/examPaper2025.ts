@@ -299,7 +299,7 @@ Coulson said that while a "nice thought experiment," including the status of old
                   answer: 'D',
                   point: '细节理解',
                   analysis:
-                    '第四段 "recommend that the IUCN Red List include \"age class\" in its assessments"，作者建议 IUCN 濒危物种红色名录纳入“年龄等级”评估，故选 D。',
+                    '第四段 "recommend that the IUCN Red List include "age class" in its assessments"，作者建议 IUCN 濒危物种红色名录纳入“年龄等级”评估，故选 D。',
                   stem: 'What is recommended by the authors of the review in Para. 4?',
                   choices: [
                     "Assessing the species' status.",

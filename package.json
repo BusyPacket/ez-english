@@ -9,5 +9,10 @@
     "build": "pnpm -r run build",
     "type-check": "pnpm --filter client type-check",
     "lint": "pnpm -r run lint"
+  },
+  "pnpm": {
+    "overrides": {
+      "drizzle-orm": "0.45.2"
+    }
   }
 }

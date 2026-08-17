@@ -19,7 +19,13 @@
     "strictBindCallApply": true,
     "forceConsistentCasingInFileNames": true,
     "noFallthroughCasesInSwitch": true,
-    "resolveJsonModule": true
+    "resolveJsonModule": true,
+    // drizzle-orm 因 peer 依赖（@libsql/client）在 pnpm 下存在双副本，
+    // 这里强制统一解析到 server 依赖的副本，避免类型不一致
+    "paths": {
+      "drizzle-orm": ["./node_modules/drizzle-orm"],
+      "drizzle-orm/*": ["./node_modules/drizzle-orm/*"]
+    }
   },
   "include": ["src/**/*"]
 }

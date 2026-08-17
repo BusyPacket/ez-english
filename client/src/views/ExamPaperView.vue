@@ -95,10 +95,39 @@ onMounted(async () => {
                 <pre>{{ passage.content }}</pre>
               </n-card>
 
-              <div v-for="q in passage.questions" :key="q.no" class="question">
+              <template v-for="q in passage.questions" :key="q.no">
+                <div v-if="q.stem || q.choices || showAnswer" class="question">
+                  <div class="q-no">{{ q.no }}.</div>
+                  <div class="q-body">
+                    <div v-if="q.stem" class="q-stem">{{ q.stem }}</div>
+                    <ul v-if="q.choices" class="q-choices">
+                      <li v-for="(choice, i) in q.choices" :key="i">
+                        <span class="opt-letter">{{ optionLetters[i] }}</span>
+                        {{ choice }}
+                      </li>
+                    </ul>
+                    <div v-if="showAnswer && q.answer" class="q-answer">
+                      <n-tag size="small" type="success" :bordered="false">答案</n-tag>
+                      {{ q.answer }}
+                    </div>
+                    <div v-if="showAnswer && q.point" class="q-meta">
+                      <n-tag size="small" type="info" :bordered="false">考点</n-tag>
+                      {{ q.point }}
+                    </div>
+                    <div v-if="showAnswer && q.analysis" class="q-analysis">
+                      <n-tag size="small" type="warning" :bordered="false">解析</n-tag>
+                      {{ q.analysis }}
+                    </div>
+                  </div>
+                </div>
+              </template>
+            </div>
+
+            <template v-for="q in block.questions" :key="q.no">
+              <div v-if="q.stem || q.choices || showAnswer" class="question">
                 <div class="q-no">{{ q.no }}.</div>
                 <div class="q-body">
-                  <div v-if="q.stem" class="q-stem">{{ q.stem }}</div>
+                  <div v-if="q.stem" class="q-stem" style="white-space: pre-line">{{ q.stem }}</div>
                   <ul v-if="q.choices" class="q-choices">
                     <li v-for="(choice, i) in q.choices" :key="i">
                       <span class="opt-letter">{{ optionLetters[i] }}</span>
@@ -119,32 +148,7 @@ onMounted(async () => {
                   </div>
                 </div>
               </div>
-            </div>
-
-            <div v-for="q in block.questions" :key="q.no" class="question">
-              <div class="q-no">{{ q.no }}.</div>
-              <div class="q-body">
-                <div v-if="q.stem" class="q-stem" style="white-space: pre-line">{{ q.stem }}</div>
-                <ul v-if="q.choices" class="q-choices">
-                  <li v-for="(choice, i) in q.choices" :key="i">
-                    <span class="opt-letter">{{ optionLetters[i] }}</span>
-                    {{ choice }}
-                  </li>
-                </ul>
-                <div v-if="showAnswer && q.answer" class="q-answer">
-                  <n-tag size="small" type="success" :bordered="false">答案</n-tag>
-                  {{ q.answer }}
-                </div>
-                <div v-if="showAnswer && q.point" class="q-meta">
-                  <n-tag size="small" type="info" :bordered="false">考点</n-tag>
-                  {{ q.point }}
-                </div>
-                <div v-if="showAnswer && q.analysis" class="q-analysis">
-                  <n-tag size="small" type="warning" :bordered="false">解析</n-tag>
-                  {{ q.analysis }}
-                </div>
-              </div>
-            </div>
+            </template>
 
             <div v-if="block.optionBank" class="option-bank">
               <div class="bank-title">选项 / 词库：</div>

@@ -41,9 +41,25 @@ export const feedback = sqliteTable('feedback', {
   createdAt: text('created_at').notNull(),
 })
 
+// 用户 AI 配置表（每个用户一条，按 userId 主键）
+export const profiles = sqliteTable('profiles', {
+  // 关联 users.id
+  userId: text('user_id').primaryKey(),
+  // AI 公司：deepseek（目前仅支持）
+  aiProvider: text('ai_provider').notNull().default('deepseek'),
+  // AI 模型（如 deepseek-v4-flash / deepseek-v4-pro）
+  model: text('ai_model').notNull().default('deepseek-v4-flash'),
+  // API Key（格式校验：sk- 开头）
+  apiKey: text('api_key').notNull(),
+  // 更新时间：带时区的 UTC 时间（ISO 8601）
+  updatedAt: text('updated_at').notNull(),
+})
+
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Progress = typeof progress.$inferSelect
 export type NewProgress = typeof progress.$inferInsert
 export type Feedback = typeof feedback.$inferSelect
 export type NewFeedback = typeof feedback.$inferInsert
+export type Profile = typeof profiles.$inferSelect
+export type NewProfile = typeof profiles.$inferInsert

@@ -29,6 +29,20 @@
       "when": 1786971375844,
       "tag": "0003_bored_fenris",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1786982682073,
+      "tag": "0004_nebulous_black_bolt",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1786982959075,
+      "tag": "0005_volatile_chat",
+      "breakpoints": true
     }
   ]
 }

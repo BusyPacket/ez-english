@@ -1,0 +1,1 @@
+ALTER TABLE `profiles` ADD `ai_model` text DEFAULT 'deepseek-v4-flash' NOT NULL;

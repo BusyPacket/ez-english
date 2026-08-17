@@ -36,6 +36,32 @@ export const useUserStore = defineStore('user', () => {
   const displayName = computed(() =>
     resolveDisplayName(user.value?.nickname ?? null, user.value?.email ?? ''),
   )
+  // AI 是否可用：仅当已配置 API Key 且检测有效时为 true
+  const aiAvailable = ref(false)
+
+  /** 刷新 AI 可用状态：有 API Key 且检测可用才为 true */
+  async function refreshAiAvailable() {
+    if (!token.value) {
+      aiAvailable.value = false
+      return
+    }
+    try {
+      const cfg = await api<{ hasApiKey: boolean }>('/profile/ai-config')
+      if (!cfg.hasApiKey) {
+        aiAvailable.value = false
+        return
+      }
+      const res = await api<{ valid: boolean }>('/profile/ai-config/verify', { method: 'POST' })
+      aiAvailable.value = res.valid
+    } catch {
+      aiAvailable.value = false
+    }
+  }
+
+  /** 手动设置 AI 可用状态（如检测 Key 后直接更新） */
+  function setAiAvailable(available: boolean) {
+    aiAvailable.value = available
+  }
 
   async function login(email: string, password: string) {
     const result = await api<LoginResult>('/auth/login', {
@@ -46,6 +72,7 @@ export const useUserStore = defineStore('user', () => {
     user.value = result.user
     localStorage.setItem(TOKEN_KEY, result.token)
     localStorage.setItem(USER_KEY, JSON.stringify(result.user))
+    void refreshAiAvailable()
   }
 
   async function register(email: string, password: string) {
@@ -81,6 +108,7 @@ export const useUserStore = defineStore('user', () => {
   function logout() {
     token.value = null
     user.value = null
+    aiAvailable.value = false
     localStorage.removeItem(TOKEN_KEY)
     localStorage.removeItem(USER_KEY)
   }
@@ -90,6 +118,9 @@ export const useUserStore = defineStore('user', () => {
     user,
     isLoggedIn,
     displayName,
+    aiAvailable,
+    refreshAiAvailable,
+    setAiAvailable,
     login,
     register,
     updateNickname,

@@ -58,3 +58,38 @@ export const changePasswordSchema = z
   })
 
 export type ChangePasswordDto = z.infer<typeof changePasswordSchema>
+
+/** 支持的 AI 公司（StrEnum，等价 Python 字符串枚举） */
+export enum AiProvider {
+  DeepSeek = 'deepseek',
+}
+
+/** 各家 AI 公司的元数据：展示名、创建 Key 的平台链接、支持的模型列表（单一权威来源） */
+export const aiProviderMeta: Record<
+  AiProvider,
+  { label: string; platformUrl: string; models: { value: string; label: string }[] }
+> = {
+  [AiProvider.DeepSeek]: {
+    label: 'DeepSeek',
+    platformUrl: 'https://platform.deepseek.com/',
+    models: [
+      { value: 'deepseek-v4-flash', label: 'DeepSeek V4 Flash（快速）' },
+      { value: 'deepseek-v4-pro', label: 'DeepSeek V4 Pro（更强）' },
+    ],
+  },
+}
+
+/** DeepSeek 支持的模型（由元数据派生，供 zod 校验，与接口保持一致） */
+export const deepseekModels = aiProviderMeta[AiProvider.DeepSeek].models.map((m) => m.value) as [
+  string,
+  ...string[],
+]
+
+/** AI 配置校验：apiKey 必须以 sk- 开头；不传则保留已保存的 key（用于只改模型/公司） */
+export const aiConfigSchema = z.object({
+  aiProvider: z.nativeEnum(AiProvider, { message: '不支持的 AI 公司' }),
+  model: z.enum(deepseekModels, { message: '不支持的模型' }),
+  apiKey: z.string().trim().regex(/^sk-/, 'API Key 必须以 sk- 开头').optional().or(z.literal('')),
+})
+
+export type AiConfigDto = z.infer<typeof aiConfigSchema>

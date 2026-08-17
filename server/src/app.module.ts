@@ -5,12 +5,14 @@ import { AppService } from './app.service'
 import { ProgressModule } from './progress/progress.module'
 import { AuthModule } from './auth/auth.module'
 import { UserModule } from './users/user.module'
+import { PapersModule } from './papers/papers.module'
 
 @Module({
   imports: [
     ProgressModule,
     UserModule,
     AuthModule,
+    PapersModule,
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET ?? 'ez-english-dev-secret',

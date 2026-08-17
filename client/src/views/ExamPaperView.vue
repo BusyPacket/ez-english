@@ -1,14 +1,17 @@
 <script setup lang="ts">
-import { computed } from 'vue'
-import { examPaper2025 } from '@/data/examPaper2025'
-import type { ExamPart } from '@/types/exam'
+import { computed, onMounted, ref } from 'vue'
+import { api } from '@/api/http'
+import type { ExamPaper, ExamPart } from '@/types/exam'
 
-const paper = examPaper2025
+const paper = ref<ExamPaper | null>(null)
+const loading = ref(true)
+const error = ref('')
 const optionLetters = ['A', 'B', 'C', 'D']
 
 const totalQuestions = computed(() => {
+  if (!paper.value) return 0
   let count = 0
-  for (const part of paper.parts) {
+  for (const part of paper.value.parts) {
     for (const block of part.blocks) {
       count += block.passages?.reduce((sum, p) => sum + p.questions.length, 0) ?? 0
       count += block.questions?.length ?? 0
@@ -20,42 +23,72 @@ const totalQuestions = computed(() => {
 function partScore(part: ExamPart) {
   return part.blocks.map((b) => b.score).join(' + ')
 }
+
+onMounted(async () => {
+  loading.value = true
+  try {
+    paper.value = await api<ExamPaper>('/papers/2025')
+  } catch (e) {
+    error.value = (e as Error).message
+  } finally {
+    loading.value = false
+  }
+})
 </script>
 
 <template>
   <div class="paper-page">
-    <n-card class="paper-header">
-      <n-h2>2025 年浙江专升本英语真题</n-h2>
-      <n-p>{{ paper.title }}</n-p>
-      <n-space>
-        <n-tag type="info">{{ paper.year }} 年真题</n-tag>
-        <n-tag type="warning">总分 150 分</n-tag>
-        <n-tag>考试时长 150 分钟</n-tag>
-        <n-tag>题目 {{ totalQuestions }} 道</n-tag>
-      </n-space>
+    <n-card v-if="loading" class="paper-header">
+      <n-spin />
     </n-card>
+    <n-alert v-else-if="error" type="error" :title="error" />
+    <template v-else-if="paper">
+      <n-card class="paper-header">
+        <n-h2>2025 年浙江专升本英语真题</n-h2>
+        <n-p>{{ paper.title }}</n-p>
+        <n-space>
+          <n-tag type="info">{{ paper.year }} 年真题</n-tag>
+          <n-tag type="warning">总分 150 分</n-tag>
+          <n-tag>考试时长 150 分钟</n-tag>
+          <n-tag>题目 {{ totalQuestions }} 道</n-tag>
+        </n-space>
+      </n-card>
 
-    <n-collapse :default-expanded-names="['reading']">
-      <n-collapse-item v-for="part in paper.parts" :key="part.id" :name="part.id"
-        :title="`${part.title}（${part.score}）`">
-        <div v-for="block in part.blocks" :key="block.id" class="block">
-          <div class="block-header">
-            <strong>{{ block.title }}</strong>
-            <n-tag size="small" type="info">{{ block.score }}</n-tag>
-          </div>
+      <n-collapse :default-expanded-names="['reading']">
+        <n-collapse-item v-for="part in paper.parts" :key="part.id" :name="part.id"
+          :title="`${part.title}（${part.score}）`">
+          <div v-for="block in part.blocks" :key="block.id" class="block">
+            <div class="block-header">
+              <strong>{{ block.title }}</strong>
+              <n-tag size="small" type="info">{{ block.score }}</n-tag>
+            </div>
 
-          <n-p v-if="block.directions" class="directions">{{ block.directions }}</n-p>
+            <n-p v-if="block.directions" class="directions">{{ block.directions }}</n-p>
 
-          <div v-for="passage in block.passages" :key="passage.title" class="passage">
-            <div class="passage-title">{{ passage.title }}</div>
-            <n-card size="small" :bordered="true" class="passage-content">
-              <pre>{{ passage.content }}</pre>
-            </n-card>
+            <div v-for="passage in block.passages" :key="passage.title" class="passage">
+              <div class="passage-title">{{ passage.title }}</div>
+              <n-card size="small" :bordered="true" class="passage-content">
+                <pre>{{ passage.content }}</pre>
+              </n-card>
 
-            <div v-for="q in passage.questions" :key="q.no" class="question">
+              <div v-for="q in passage.questions" :key="q.no" class="question">
+                <div class="q-no">{{ q.no }}.</div>
+                <div class="q-body">
+                  <div v-if="q.stem" class="q-stem">{{ q.stem }}</div>
+                  <ul v-if="q.choices" class="q-choices">
+                    <li v-for="(choice, i) in q.choices" :key="i">
+                      <span class="opt-letter">{{ optionLetters[i] }}</span>
+                      {{ choice }}
+                    </li>
+                  </ul>
+                </div>
+              </div>
+            </div>
+
+            <div v-for="q in block.questions" :key="q.no" class="question">
               <div class="q-no">{{ q.no }}.</div>
               <div class="q-body">
-                <div v-if="q.stem" class="q-stem">{{ q.stem }}</div>
+                <div v-if="q.stem" class="q-stem" style="white-space: pre-line">{{ q.stem }}</div>
                 <ul v-if="q.choices" class="q-choices">
                   <li v-for="(choice, i) in q.choices" :key="i">
                     <span class="opt-letter">{{ optionLetters[i] }}</span>
@@ -64,32 +97,19 @@ function partScore(part: ExamPart) {
                 </ul>
               </div>
             </div>
-          </div>
 
-          <div v-for="q in block.questions" :key="q.no" class="question">
-            <div class="q-no">{{ q.no }}.</div>
-            <div class="q-body">
-              <div v-if="q.stem" class="q-stem" style="white-space: pre-line">{{ q.stem }}</div>
-              <ul v-if="q.choices" class="q-choices">
-                <li v-for="(choice, i) in q.choices" :key="i">
-                  <span class="opt-letter">{{ optionLetters[i] }}</span>
-                  {{ choice }}
-                </li>
-              </ul>
+            <div v-if="block.optionBank" class="option-bank">
+              <div class="bank-title">选项 / 词库：</div>
+              <n-space wrap :size="4">
+                <n-tag v-for="opt in block.optionBank" :key="opt" size="small" :bordered="true">
+                  {{ opt }}
+                </n-tag>
+              </n-space>
             </div>
           </div>
-
-          <div v-if="block.optionBank" class="option-bank">
-            <div class="bank-title">选项 / 词库：</div>
-            <n-space wrap :size="4">
-              <n-tag v-for="opt in block.optionBank" :key="opt" size="small" :bordered="true">
-                {{ opt }}
-              </n-tag>
-            </n-space>
-          </div>
-        </div>
-      </n-collapse-item>
-    </n-collapse>
+        </n-collapse-item>
+      </n-collapse>
+    </template>
   </div>
 </template>
 

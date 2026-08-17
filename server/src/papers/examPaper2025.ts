@@ -1,7 +1,7 @@
 // 2025 年浙江省统招专升本英语真题
 // 数据来源：exam-papers/2025年英语真题.md
 
-import type { ExamPaper } from '@/types/exam'
+import type { ExamPaper } from './exam.types'
 
 export const examPaper2025: ExamPaper = {
   year: 2025,

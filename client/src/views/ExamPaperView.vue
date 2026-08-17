@@ -1,12 +1,17 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref } from 'vue'
+import { useRoute } from 'vue-router'
 import { api } from '@/api/http'
 import type { ExamPaper, ExamPart } from '@/types/exam'
 
+const route = useRoute()
 const paper = ref<ExamPaper | null>(null)
 const loading = ref(true)
 const error = ref('')
+const showAnswer = ref(false)
 const optionLetters = ['A', 'B', 'C', 'D']
+const expandedNames = ref<string[]>(['reading'])
+const highlightBlock = ref('')
 
 const totalQuestions = computed(() => {
   if (!paper.value) return 0
@@ -28,6 +33,17 @@ onMounted(async () => {
   loading.value = true
   try {
     paper.value = await api<ExamPaper>('/papers/2025')
+    const targetBlock = route.query.block as string | undefined
+    if (targetBlock) {
+      const targetPart =
+        (route.query.part as string) ||
+        paper.value.parts.find((p) => p.blocks.some((b) => b.id === targetBlock))?.id
+      if (targetPart) expandedNames.value = [targetPart]
+      highlightBlock.value = targetBlock
+      nextTick(() => {
+        document.getElementById(`block-${targetBlock}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
+    }
   } catch (e) {
     error.value = (e as Error).message
   } finally {
@@ -52,14 +68,22 @@ onMounted(async () => {
           <n-tag>考试时长 150 分钟</n-tag>
           <n-tag>题目 {{ totalQuestions }} 道</n-tag>
         </n-space>
+        <div class="answer-toggle">
+          <n-switch v-model:value="showAnswer" size="small" />
+          <span>显示答案</span>
+        </div>
       </n-card>
 
-      <n-collapse :default-expanded-names="['reading']">
+      <n-collapse v-model:expanded-names="expandedNames">
         <n-collapse-item v-for="part in paper.parts" :key="part.id" :name="part.id"
           :title="`${part.title}（${part.score}）`">
-          <div v-for="block in part.blocks" :key="block.id" class="block">
+          <div v-for="block in part.blocks" :key="block.id" :id="'block-' + block.id" class="block"
+            :class="{ 'block-highlight': highlightBlock === block.id }">
             <div class="block-header">
-              <strong>{{ block.title }}</strong>
+              <n-space :size="8" align="center">
+                <n-tag v-if="block.type" size="small" type="success" :bordered="false">{{ block.type }}</n-tag>
+                <strong>{{ block.title }}</strong>
+              </n-space>
               <n-tag size="small" type="info">{{ block.score }}</n-tag>
             </div>
 
@@ -81,6 +105,10 @@ onMounted(async () => {
                       {{ choice }}
                     </li>
                   </ul>
+                  <div v-if="showAnswer && q.answer" class="q-answer">
+                    <n-tag size="small" type="success" :bordered="false">答案</n-tag>
+                    {{ q.answer }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -95,6 +123,10 @@ onMounted(async () => {
                     {{ choice }}
                   </li>
                 </ul>
+                <div v-if="showAnswer && q.answer" class="q-answer">
+                  <n-tag size="small" type="success" :bordered="false">答案</n-tag>
+                  {{ q.answer }}
+                </div>
               </div>
             </div>
 
@@ -105,6 +137,10 @@ onMounted(async () => {
                   {{ opt }}
                 </n-tag>
               </n-space>
+            </div>
+            <div v-if="showAnswer && block.answers" class="q-answer">
+              <n-tag size="small" type="success" :bordered="false">答案</n-tag>
+              {{ block.answers }}
             </div>
           </div>
         </n-collapse-item>
@@ -126,6 +162,14 @@ onMounted(async () => {
 
 .block {
   padding: 12px 0;
+  scroll-margin-top: 16px;
+}
+
+.block-highlight {
+  border: 2px solid var(--n-success-color);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--n-success-color) 7%, transparent);
 }
 
 .block-header {
@@ -157,6 +201,20 @@ onMounted(async () => {
   font-size: 14px;
   line-height: 1.7;
   margin: 0;
+}
+
+.answer-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 13px;
+}
+
+.q-answer {
+  margin-top: 6px;
+  color: var(--n-success-color);
+  font-weight: 500;
 }
 
 .question {

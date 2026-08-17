@@ -14,6 +14,7 @@ export const examPaper2025: ExamPaper = {
       blocks: [
         {
           id: 'passage-reading-format1',
+          type: '四选一',
           title: 'Section A Passage Reading · Format I（阅读选择）',
           score: '40 分',
           directions:
@@ -35,6 +36,7 @@ AI expert Giuseppe Sette told CBS News that DeepSeek has taken technology compan
               questions: [
                 {
                   no: 1,
+                  answer: 'C',
                   stem: 'Generative AI is',
                   choices: [
                     'a piece of text',
@@ -45,11 +47,13 @@ AI expert Giuseppe Sette told CBS News that DeepSeek has taken technology compan
                 },
                 {
                   no: 2,
+                  answer: 'B',
                   stem: 'How much did it cost OpenAI to develop its latest ChatGPT model?',
                   choices: ['£1 million.', '£80 million.', '£4.8 million.', '£200 million.'],
                 },
                 {
                   no: 3,
+                  answer: 'A',
                   stem: "What might be implied in the experts' words in Para. 4?",
                   choices: [
                     'China might lead the world in AI in the future.',
@@ -60,11 +64,13 @@ AI expert Giuseppe Sette told CBS News that DeepSeek has taken technology compan
                 },
                 {
                   no: 4,
+                  answer: 'D',
                   stem: 'Which of the following is NOT a type of software in the passage?',
                   choices: ['Gemini.', 'ChatGPT.', 'DeepSeek.', 'CBS News.'],
                 },
                 {
                   no: 5,
+                  answer: 'B',
                   stem: 'Which of the following might be the best title for the passage?',
                   choices: [
                     'Low Cost of Developing AI Apps.',
@@ -87,16 +93,19 @@ Austin from Felixstowe, Suffolk, visited all 55 cities with his father, Ashley. 
               questions: [
                 {
                   no: 6,
+                  answer: 'D',
                   stem: 'What does the underlined word "delay-free" in Para. 1 probably mean?',
                   choices: ['Safe.', 'Boring.', 'Painful.', 'Pleasant.'],
                 },
                 {
                   no: 7,
+                  answer: 'A',
                   stem: "Which city was Austin's favorite during his train travel?",
                   choices: ['York.', 'Truro.', 'Carlisle.', 'Brighton.'],
                 },
                 {
                   no: 8,
+                  answer: 'A',
                   stem: 'What can we learn from Para. 3?',
                   choices: [
                     'Austin fell in love with trains at the age of two.',
@@ -107,6 +116,7 @@ Austin from Felixstowe, Suffolk, visited all 55 cities with his father, Ashley. 
                 },
                 {
                   no: 9,
+                  answer: 'C',
                   stem: 'What was one of the benefits Austin got from the train travel?',
                   choices: [
                     'He could plan a new trip.',
@@ -117,6 +127,7 @@ Austin from Felixstowe, Suffolk, visited all 55 cities with his father, Ashley. 
                 },
                 {
                   no: 10,
+                  answer: 'C',
                   stem: 'Which of the following is NOT true about Ashley and Austin?',
                   choices: [
                     'They visited train stations.',
@@ -139,6 +150,7 @@ Those who have long relied on sled dogs say that sea ice is not as common and as
               questions: [
                 {
                   no: 11,
+                  answer: 'C',
                   stem: "Olsen's father asked his daughters whether they would like to",
                   choices: [
                     'feed the whole family',
@@ -149,6 +161,7 @@ Those who have long relied on sled dogs say that sea ice is not as common and as
                 },
                 {
                   no: 12,
+                  answer: 'D',
                   stem: "It's a proud tradition for people in Greenland to use sled dogs for",
                   choices: [
                     'entertaining tourists',
@@ -159,6 +172,7 @@ Those who have long relied on sled dogs say that sea ice is not as common and as
                 },
                 {
                   no: 13,
+                  answer: 'D',
                   stem: 'Why has the number of sled dogs been cut in half over the last 20 years?',
                   choices: [
                     'Because it is too expensive to own sled dogs.',
@@ -169,6 +183,7 @@ Those who have long relied on sled dogs say that sea ice is not as common and as
                 },
                 {
                   no: 14,
+                  answer: 'D',
                   stem: 'What did Olsen consider doing in order to keep the tradition alive?',
                   choices: [
                     'Pulling a sled by herself.',
@@ -179,6 +194,7 @@ Those who have long relied on sled dogs say that sea ice is not as common and as
                 },
                 {
                   no: 15,
+                  answer: 'B',
                   stem: 'The underlined word "mushers" in Para. 4 means people who',
                   choices: [
                     'buy a dog sled',
@@ -203,11 +219,13 @@ Coulson said that while a "nice thought experiment," including the status of old
               questions: [
                 {
                   no: 16,
+                  answer: 'D',
                   stem: 'What does the underlined word "counterparts" in Para. 1 refer to?',
                   choices: ['Authors.', 'Ecologists.', 'Fish fathers.', 'Fish mothers.'],
                 },
                 {
                   no: 17,
+                  answer: 'C',
                   stem: 'How can older animals help younger ones with their "wisdom" according to Para. 2?',
                   choices: [
                     'By building shelter.',
@@ -218,11 +236,13 @@ Coulson said that while a "nice thought experiment," including the status of old
                 },
                 {
                   no: 18,
+                  answer: 'A',
                   stem: "What is Coulson's attitude towards the review according to Para. 3?",
                   choices: ['Positive.', 'Doubtful.', 'Negative.', 'Indifferent.'],
                 },
                 {
                   no: 19,
+                  answer: 'D',
                   stem: 'What is recommended by the authors of the review in Para. 4?',
                   choices: [
                     "Assessing the species' status.",
@@ -233,6 +253,7 @@ Coulson said that while a "nice thought experiment," including the status of old
                 },
                 {
                   no: 20,
+                  answer: 'B',
                   stem: 'What is the passage mainly about?',
                   choices: [
                     'The survival of younger trees.',
@@ -247,6 +268,7 @@ Coulson said that while a "nice thought experiment," including the status of old
         },
         {
           id: 'passage-reading-format2',
+          type: '七选五',
           title: 'Section A Passage Reading · Format II（七选五）',
           score: '10 分',
           directions:
@@ -279,21 +301,23 @@ In a word, staying connected abroad is easier and cheaper than you might think, 
             'F. Make use of a portable Wi-Fi hotspot.',
             'G. Choose an international roaming plan.',
           ],
+          answers: '21-B 22-G 23-F 24-E 25-D',
         },
         {
           id: 'banked-cloze',
+          type: '十五选十',
           title: 'Section B Banked Cloze（选词填空）',
           score: '10 分',
           directions:
             'In this section, there is a passage with ten blanks. You are required to select one word for each blank from a list of choices given in a word bank following the passage. Read the passage through carefully before making your choices. Please mark the corresponding letter for each item on The Answer Sheet. You may not use any of the words in the bank more than once. (10 points)',
           passages: [
             {
-              title: 'Celebrating Small Successes（空 26-39）',
-              content: `Whether it's working hard at your favorite subject or baking a cake for your friends, putting effort into something that makes you happy is an achievement. It's a good feeling you can get from all __26__ of your life. You might not always notice your __27__: successes. Success can be something that no one else sees but you feel, such as making it through a __28__ day or speaking up in class.
+              title: 'Celebrating Small Successes（空 26-35）',
+              content: `Whether it's working hard at your favorite subject or baking a cake for your friends, putting effort into something that makes you happy is an achievement. It's a good feeling you can get from all __26__ of your life. You might not always notice your __27__ successes. Success can be something that no one else sees but you feel, such as making it through a __28__ day or speaking up in class.
 
 Recognizing small successes __29__ you feel you can achieve bigger things, says Melanie MoNally, who is a psychologist. Studies show that when you celebrate your __30__, the __31__ of your brain lights up and boosts how you feel about yourself. This makes you feel __32__ motivated and helps to __33__ challenges in the future.
 
-Celebrating your successes, even small ones, is important, MoNally says. If you __34__ such as learning a musical instrument, make a sticker chart to show how __35__ practice. When the chart is full, __36__ yourself with what Monally calls "victory" treats. __37__ could be fun things such as a bike ride with friends, playing games or a __38__ bath. Share __39__ wins with family and friends too, so they can support you.`,
+Celebrating your successes, even small ones, is important, MoNally says. If you __34__ such as learning a musical instrument, make a sticker chart to show how __35__ practice. When the chart is full, reward yourself with what MoNally calls "victory" treats. These could be fun things such as a bike ride with friends, playing games or a relaxing bath. Share small wins with family and friends too, so they can support you.`,
               questions: [],
             },
           ],
@@ -314,6 +338,8 @@ Celebrating your successes, even small ones, is important, MoNally says. If you 
             'N. small',
             'O. takes',
           ],
+          answers:
+            '26-H(areas) 27-N(small) 28-L(difficult) 29-C(makes) 30-F(achievements) 31-B(reward) 32-I(usually) 33-K(overcome) 34-E(goal) 35-D(often)',
         },
       ],
     },
@@ -324,6 +350,7 @@ Celebrating your successes, even small ones, is important, MoNally says. If you 
       blocks: [
         {
           id: 'cloze',
+          type: '完形填空',
           title: 'Section A Cloze（完形填空）',
           score: '20 分',
           directions:
@@ -339,40 +366,68 @@ For the study, researchers __48__ the amount of fog they collected. They then co
 
 The researchers say that, __52__ fog collecting to work well, there needs to __53__ a system for storing and distributing large amounts of water. They hope their work will inspire __54__ people explore fog collecting __55__ a way of supplying water to areas with similar conditions.`,
               questions: [
-                { no: 36, stem: '', choices: ['idea', 'theory', 'meaning', 'definition'] },
-                { no: 37, stem: '', choices: ['Besides', 'However', 'Therefore', 'Moreover'] },
-                { no: 38, stem: '', choices: ['proved', 'reviewed', 'suggested', 'indicated'] },
-                { no: 39, stem: '', choices: ['poor', 'effective', 'harmful', 'common'] },
-                { no: 40, stem: '', choices: ['how', 'that', 'what', 'where'] },
-                { no: 41, stem: '', choices: ['along', 'about', 'above', 'across'] },
-                { no: 42, stem: '', choices: ['took', 'drew', 'carried', 'pointed'] },
-                { no: 43, stem: '', choices: ['much', 'many', 'small', 'little'] },
-                { no: 44, stem: '', choices: ['way', 'exist', 'visit', 'access'] },
-                { no: 45, stem: '', choices: ['to', 'in', 'on', 'of'] },
+                {
+                  no: 36,
+                  answer: 'A',
+                  stem: '',
+                  choices: ['idea', 'theory', 'meaning', 'definition'],
+                },
+                {
+                  no: 37,
+                  answer: 'B',
+                  stem: '',
+                  choices: ['Besides', 'However', 'Therefore', 'Moreover'],
+                },
+                {
+                  no: 38,
+                  answer: 'C',
+                  stem: '',
+                  choices: ['proved', 'reviewed', 'suggested', 'indicated'],
+                },
+                {
+                  no: 39,
+                  answer: 'B',
+                  stem: '',
+                  choices: ['poor', 'effective', 'harmful', 'common'],
+                },
+                { no: 40, answer: 'D', stem: '', choices: ['how', 'that', 'what', 'where'] },
+                { no: 41, answer: 'B', stem: '', choices: ['along', 'about', 'above', 'across'] },
+                { no: 42, answer: 'C', stem: '', choices: ['took', 'drew', 'carried', 'pointed'] },
+                { no: 43, answer: 'D', stem: '', choices: ['much', 'many', 'small', 'little'] },
+                { no: 44, answer: 'D', stem: '', choices: ['way', 'exist', 'visit', 'access'] },
+                { no: 45, answer: 'C', stem: '', choices: ['to', 'in', 'on', 'of'] },
                 {
                   no: 46,
+                  answer: 'B',
                   stem: '',
                   choices: ['hardly', 'regularly', 'absolutely', 'occasionally'],
                 },
-                { no: 47, stem: '', choices: ['it', 'them', 'itself', 'themselves'] },
-                { no: 48, stem: '', choices: ['proved', 'reviewed', 'measured', 'indicated'] },
+                { no: 47, answer: 'A', stem: '', choices: ['it', 'them', 'itself', 'themselves'] },
+                {
+                  no: 48,
+                  answer: 'C',
+                  stem: '',
+                  choices: ['proved', 'reviewed', 'measured', 'indicated'],
+                },
                 {
                   no: 49,
+                  answer: 'D',
                   stem: '',
                   choices: ['interest', 'incidents', 'instructions', 'information'],
                 },
-                { no: 50, stem: '', choices: ['up', 'off', 'out', 'down'] },
-                { no: 51, stem: '', choices: ['make', 'meet', 'reach', 'handle'] },
-                { no: 52, stem: '', choices: ['form', 'bring', 'examine', 'improve'] },
-                { no: 53, stem: '', choices: ['be', 'get', 'see', 'have'] },
-                { no: 54, stem: '', choices: ['else', 'other', 'others', 'another'] },
-                { no: 55, stem: '', choices: ['as', 'by', 'like', 'against'] },
+                { no: 50, answer: 'C', stem: '', choices: ['up', 'off', 'out', 'down'] },
+                { no: 51, answer: 'B', stem: '', choices: ['make', 'meet', 'reach', 'handle'] },
+                { no: 52, answer: 'A', stem: '', choices: ['form', 'bring', 'examine', 'improve'] },
+                { no: 53, answer: 'A', stem: '', choices: ['be', 'get', 'see', 'have'] },
+                { no: 54, answer: 'B', stem: '', choices: ['else', 'other', 'others', 'another'] },
+                { no: 55, answer: 'A', stem: '', choices: ['as', 'by', 'like', 'against'] },
               ],
             },
           ],
         },
         {
           id: 'short-answer',
+          type: '篇章问答',
           title: 'Section B Short Answer Questions（篇章问答）',
           score: '10 分',
           directions:
@@ -382,29 +437,43 @@ The researchers say that, __52__ fog collecting to work well, there needs to __5
               title: 'The Power of Smiling（Questions 56-60）',
               content: `Research reveals that showing you're happy can enhance both physical and mental health.
 
-Smiling is a stress reliever. A University of Kansas study found that participants who were ___ to smile during stressful tasks had lower heart rates during stress recovery. So it seems even ___ yourself to look happy helps to manage tricky situations.
+Smiling is a stress reliever. A University of Kansas study found that participants who were ... to smile during stressful tasks had lower heart rates during stress recovery. So it seems even ... yourself to look happy helps to manage tricky situations.
 
-It may lower blood pressure. The fact that smiling reduces your heart rate when you're stressed ___ likely to have a knock-on effect on blood pressure. Other research has shown that blood ___ doesn't rise when people are exposed to humor.
+It may lower blood pressure. The fact that smiling reduces your heart rate when you're stressed ... likely to have a knock-on effect on blood pressure. Other research has shown that blood ... doesn't rise when people are exposed to humor.
 
-Smiling boosts immunity (免疫力). A ___ so ___ if you want to stay well, it makes sense to ___. Being amused also causes the release of endorphins (内啡肽) in ___. Endorphins are the body's natural painkillers. In one study, participants who smiled ___ reported 40 percent less pain.
+Smiling boosts immunity (免疫力). A ... so ... if you want to stay well, it makes sense to .... Being amused also causes the release of endorphins (内啡肽) in .... Endorphins are the body's natural painkillers. In one study, participants who smiled ... reported 40 percent less pain.
 
-It ___ happy improves positive mood. It seems smiling really can boost your mood, rather ___ a response to feeling happy. A 2022 study of 3,878 participants in 19 countries ___ happiness rating was higher when they smiled.
+... happy improves positive mood. It seems smiling really can boost your mood, rather ... a response to feeling happy. A 2022 study of 3,878 participants in 19 countries ... happiness rating was higher when they smiled.
 
-It ___ live longer. A 2010 study from Washington State University found that pre-1950s ___ basketball players who had the broadest smile in photos lived longer.
+... live longer. A 2010 study from Washington State University found that pre-1950s ... basketball players who had the broadest smile in photos lived longer.
 
-Smiling also makes you appear kind to others and helps you to connect with them. If ___ enough, it'll become second nature. Give yourself cues to remind you to smile — when ___ laughing or you're making a cup of tea — or put a note on your phone as a reminder ___ pleasuable, such as a favorite person, place or memory.`,
+... smiling also makes you appear kind to others and helps you to connect with them. If ... enough, it'll become second nature. Give yourself cues to remind you to smile — when ... laughing or you're making a cup of tea — or put a note on your phone as a reminder ... pleasurable, such as a favorite person, place or memory.`,
               questions: [
                 {
                   no: 56,
-                  stem: '___ the participants required to do in the University of Kansas study?',
+                  answer: 'To smile during stressful tasks.',
+                  stem: '... the participants required to do in the University of Kansas study?',
                 },
                 {
                   no: 57,
-                  stem: "___ has suggested that blood pressure doesn't rise when people ______.",
+                  answer: 'are exposed to humor',
+                  stem: "... has suggested that blood pressure doesn't rise when people ______.",
                 },
-                { no: 58, stem: '___ smile improve immune function?' },
-                { no: 59, stem: '___ be finding of the 2022 study?' },
-                { no: 60, stem: '___ make smiling your second nature?' },
+                {
+                  no: 58,
+                  answer: 'Yes. By releasing endorphins.',
+                  stem: '... smile improve immune function?',
+                },
+                {
+                  no: 59,
+                  answer: 'Happiness rating was higher when they smiled.',
+                  stem: '... be finding of the 2022 study?',
+                },
+                {
+                  no: 60,
+                  answer: 'Give yourself cues to remind you to smile.',
+                  stem: '... make smiling your second nature?',
+                },
               ],
             },
           ],
@@ -418,30 +487,72 @@ Smiling also makes you appear kind to others and helps you to connect with them.
       blocks: [
         {
           id: 'cn2en',
+          type: '汉译英',
           title: 'Section A From Chinese to English（汉译英）',
           score: '15 分',
           directions:
             'Complete the sentences by translating into English the Chinese given in the brackets. Please write your translation on The Answer Sheet. (15 points)',
           questions: [
-            { no: 61, stem: 'Art is great because it ______（让你认识你自己）.' },
-            { no: 62, stem: 'A wetland is an area where the land ______（大多数时候被水覆盖）.' },
-            { no: 63, stem: '______（帮助他人）benefits the one who helps.' },
-            { no: 64, stem: 'There can be lots of new things that ______（发生在你的生活中）.' },
-            { no: 65, stem: 'Dogs are ______（不仅可爱）but also very smart.' },
+            {
+              no: 61,
+              answer: 'helps you (to) get to know yourself',
+              stem: 'Art is great because it ______（让你认识你自己）.',
+            },
+            {
+              no: 62,
+              answer: 'is covered with water most of the time',
+              stem: 'A wetland is an area where the land ______（大多数时候被水覆盖）.',
+            },
+            {
+              no: 63,
+              answer: 'Helping others',
+              stem: '______（帮助他人）benefits the one who helps.',
+            },
+            {
+              no: 64,
+              answer: 'happen in your life',
+              stem: 'There can be lots of new things that ______（发生在你的生活中）.',
+            },
+            {
+              no: 65,
+              answer: 'not only cute',
+              stem: 'Dogs are ______（不仅可爱）but also very smart.',
+            },
           ],
         },
         {
           id: 'en2cn',
+          type: '英译汉',
           title: 'Section B From English to Chinese（英译汉）',
           score: '15 分',
           directions:
             'Translate into English the underlined sentences in the following passage. Write your translation on The Answer Sheet. (15 points)',
           questions: [
-            { no: 66, stem: 'They could not make public speeches.' },
-            { no: 67, stem: 'most women were full-time mothers and wives.' },
-            { no: 68, stem: 'They worked to improve the lives of the poor.' },
-            { no: 69, stem: 'They pursued professions in fields that interested them.' },
-            { no: 70, stem: 'Women are the leaders of major companies and organizations.' },
+            {
+              no: 66,
+              answer: '她们不能发表公开演讲。',
+              stem: 'They could not make public speeches.',
+            },
+            {
+              no: 67,
+              answer: '大多数女性都是全职的母亲和妻子。',
+              stem: 'most women were full-time mothers and wives.',
+            },
+            {
+              no: 68,
+              answer: '她们努力改善穷人的生活。',
+              stem: 'They worked to improve the lives of the poor.',
+            },
+            {
+              no: 69,
+              answer: '她们在感兴趣的领域追求职业。',
+              stem: 'They pursued professions in fields that interested them.',
+            },
+            {
+              no: 70,
+              answer: '女性是大型公司和组织的领导者。',
+              stem: 'Women are the leaders of major companies and organizations.',
+            },
           ],
         },
       ],
@@ -453,6 +564,7 @@ Smiling also makes you appear kind to others and helps you to connect with them.
       blocks: [
         {
           id: 'composition',
+          type: '短文写作',
           title: '写作（Composition）',
           score: '30 分',
           directions:
@@ -460,6 +572,8 @@ Smiling also makes you appear kind to others and helps you to connect with them.
           questions: [
             {
               no: 71,
+              answer:
+                'Timed examinations have long been a traditional way of testing students within a limited time. Some people think they are fair because every student faces the same challenge and pressure. Others believe they are unfair because some students cannot perform well under pressure. In my view, timed exams are necessary and generally fair. They test quick thinking and time management, and offer a uniform standard for all students. To reduce unfairness, we should design papers of reasonable difficulty and practise more. All in all, although not perfect, timed exams remain an effective form of assessment.',
               stem: '（1）限时考试是要求学生在规定时间内完成考试的一种传统方式。有人认为这种考试方式是公平的，所有学生都面临同等挑战和压力；有人认为这种考试方式不够公平，有些学生不能发挥正常水平。\n（2）请阐述你的观点和理由。',
             },
           ],

@@ -1,0 +1,17 @@
+/* 全局唯一基准字号：
+ * 修改 --base-font-size，全站所有字号（含 Naive UI 组件与页面自定义字号）都会按比例缩放。
+ * 所有页面字号均使用 rem（1rem = 16px 基准）。
+ */
+:root {
+  --base-font-size: 18px;
+}
+
+html {
+  font-size: var(--base-font-size);
+}
+
+/* 正文基础字号跟随基准（rem）；!important 覆盖 Naive UI n-global-style 对 body 的固定 14px */
+body {
+  margin: 0;
+  font-size: 0.9375rem !important; /* 15px */
+}

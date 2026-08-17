@@ -59,12 +59,12 @@ function handleMenuSelect(key: string) {
   max-width: 960px;
   margin: 0 auto;
   padding: 0 16px;
-  height: 48px;
+  height: 56px;
 }
 
 .brand {
   font-weight: 600;
-  font-size: 16px;
+  font-size: 1rem;
   white-space: nowrap;
 }
 
@@ -73,7 +73,7 @@ function handleMenuSelect(key: string) {
 }
 
 .theme-icon {
-  font-size: 18px;
+  font-size: 1.125rem;
   line-height: 1;
 }
 </style>

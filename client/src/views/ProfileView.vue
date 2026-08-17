@@ -410,20 +410,20 @@ onMounted(loadAiConfig)
 }
 
 .model-src-live {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--n-success-color);
   margin-top: 4px;
 }
 
 .model-src-fallback {
-  font-size: 12px;
+  font-size: 0.75rem;
   color: var(--n-warning-color);
   margin-top: 4px;
 }
 
 .ai-tip {
   color: var(--n-text-color-3);
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.6;
 }
 
@@ -432,7 +432,7 @@ onMounted(loadAiConfig)
 }
 
 .ai-note {
-  font-size: 13px;
+  font-size: 0.8125rem;
   line-height: 1.7;
   color: var(--n-text-color-2);
   background: color-mix(in srgb, var(--n-info-color) 6%, transparent);
@@ -450,12 +450,12 @@ onMounted(loadAiConfig)
 }
 
 .ai-status {
-  font-size: 13px;
+  font-size: 0.8125rem;
   color: var(--n-success-color);
 }
 
 .ai-result {
-  font-size: 13px;
+  font-size: 0.8125rem;
   padding: 6px 10px;
   border-radius: 6px;
 }
@@ -471,7 +471,7 @@ onMounted(loadAiConfig)
 }
 
 .ai-balance {
-  font-size: 13px;
+  font-size: 0.8125rem;
   border: 1px solid var(--n-border-color);
   border-radius: 6px;
   padding: 8px 10px;

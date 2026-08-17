@@ -55,6 +55,29 @@ export const useUserStore = defineStore('user', () => {
     })
   }
 
+  /** 修改昵称：成功后同步本地用户信息 */
+  async function updateNickname(nickname: string) {
+    const updated = await api<User>('/profile/nickname', {
+      method: 'PATCH',
+      body: JSON.stringify({ nickname }),
+    })
+    user.value = updated
+    localStorage.setItem(USER_KEY, JSON.stringify(updated))
+    return updated
+  }
+
+  /** 修改密码：校验当前密码并更新为新密码 */
+  async function changePassword(
+    currentPassword: string,
+    newPassword: string,
+    confirmPassword: string,
+  ) {
+    await api('/profile/password', {
+      method: 'PATCH',
+      body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+    })
+  }
+
   function logout() {
     token.value = null
     user.value = null
@@ -62,5 +85,15 @@ export const useUserStore = defineStore('user', () => {
     localStorage.removeItem(USER_KEY)
   }
 
-  return { token, user, isLoggedIn, displayName, login, register, logout }
+  return {
+    token,
+    user,
+    isLoggedIn,
+    displayName,
+    login,
+    register,
+    updateNickname,
+    changePassword,
+    logout,
+  }
 })

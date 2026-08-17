@@ -1,4 +1,9 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common'
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common'
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
 import { count, eq, like, or } from 'drizzle-orm'
 import { db, schema } from '../database/database'
@@ -39,6 +44,43 @@ export class UserService {
     if (result.rowsAffected === 0) {
       throw new NotFoundException('用户不存在')
     }
+  }
+
+  /** 修改当前用户昵称，返回更新后的用户信息（不含密码） */
+  async updateNickname(id: string, nickname: string) {
+    const updated = await db
+      .update(schema.users)
+      .set({ nickname })
+      .where(eq(schema.users.id, id))
+      .returning({
+        id: schema.users.id,
+        email: schema.users.email,
+        nickname: schema.users.nickname,
+        role: schema.users.role,
+        createdAt: schema.users.createdAt,
+      })
+      .get()
+    if (!updated) {
+      throw new NotFoundException('用户不存在')
+    }
+    return updated
+  }
+
+  /** 修改密码：校验当前密码正确后更新为 scrypt 新哈希 */
+  async updatePassword(id: string, currentPassword: string, newPassword: string) {
+    const user = await db.select().from(schema.users).where(eq(schema.users.id, id)).get()
+    if (!user) {
+      throw new NotFoundException('用户不存在')
+    }
+    if (!this.verifyPassword(currentPassword, user.passwordHash)) {
+      throw new BadRequestException('当前密码不正确')
+    }
+    await db
+      .update(schema.users)
+      .set({ passwordHash: this.hashPassword(newPassword) })
+      .where(eq(schema.users.id, id))
+      .run()
+    return { message: '密码修改成功' }
   }
 
   async create(dto: RegisterDto) {

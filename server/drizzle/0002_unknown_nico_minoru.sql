@@ -1,0 +1,1 @@
+ALTER TABLE `feedback` ADD `status` text DEFAULT 'pending' NOT NULL;

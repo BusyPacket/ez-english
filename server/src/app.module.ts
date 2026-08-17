@@ -6,6 +6,7 @@ import { ProgressModule } from './progress/progress.module'
 import { AuthModule } from './auth/auth.module'
 import { UserModule } from './users/user.module'
 import { PapersModule } from './papers/papers.module'
+import { FeedbackModule } from './feedback/feedback.module'
 
 @Module({
   imports: [
@@ -13,6 +14,7 @@ import { PapersModule } from './papers/papers.module'
     UserModule,
     AuthModule,
     PapersModule,
+    FeedbackModule,
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET ?? 'ez-english-dev-secret',

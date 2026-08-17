@@ -11,9 +11,10 @@ const route = useRoute()
 
 const menuOptions = [
   { label: '首页', key: '/' },
-  { label: '学习进度', key: '/progress' },
-  { label: '考试内容', key: '/exam' },
-  { label: '英语真题', key: '/exam-paper' },
+  { label: '进度', key: '/progress' },
+  { label: '题型', key: '/exam' },
+  { label: '真题', key: '/exam-paper' },
+  { label: '反馈', key: '/feedback' },
 ]
 
 const activeKey = computed(() => route.path)
@@ -28,7 +29,8 @@ function handleMenuSelect(key: string) {
     <div class="navbar-inner">
       <div class="brand">📚 ez-english</div>
       <n-menu mode="horizontal" :options="menuOptions" :value="activeKey" @update:value="handleMenuSelect" />
-      <n-button v-if="userStore.user?.role === 'admin'" quaternary size="small" @click="router.push('/admin')">后台</n-button>
+      <n-button v-if="userStore.user?.role === 'admin'" quaternary size="small"
+        @click="router.push('/admin')">后台</n-button>
       <div class="spacer" />
       <n-space v-if="userStore.isLoggedIn" align="center">
         <n-a :strong="true" @click="router.push('/profile')">{{ userStore.displayName }}</n-a>

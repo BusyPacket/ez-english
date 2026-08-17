@@ -12,8 +12,8 @@ const route = useRoute()
 const menuOptions = [
   { label: '首页', key: '/' },
   { label: '进度', key: '/progress' },
-  { label: '题型', key: '/exam' },
   { label: '真题', key: '/exam-paper' },
+  { label: '排行榜', key: '/leaderboard' },
   { label: '反馈', key: '/feedback' },
 ]
 

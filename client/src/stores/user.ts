@@ -1,5 +1,6 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
+import { displayName as resolveDisplayName } from '@ez-english/shared'
 import { api } from '@/api/http'
 
 export interface User {
@@ -26,23 +27,14 @@ function loadUser(): User | null {
   }
 }
 
-/** 邮箱脱敏：保留前 2 位，中间用星号代替（如 fr******@example.com） */
-function maskEmail(email: string): string {
-  const atIndex = email.indexOf('@')
-  if (atIndex <= 1) return email
-  const local = email.slice(0, atIndex)
-  const domain = email.slice(atIndex)
-  const visible = local.slice(0, 2)
-  return `${visible}${'*'.repeat(Math.max(local.length - visible.length, 4))}${domain}`
-}
-
 export const useUserStore = defineStore('user', () => {
   const token = ref<string | null>(localStorage.getItem(TOKEN_KEY))
   const user = ref<User | null>(loadUser())
 
   const isLoggedIn = computed(() => !!token.value)
-  const displayName = computed(
-    () => user.value?.nickname || maskEmail(user.value?.email ?? '') || '',
+  // 展示名：昵称优先，否则脱敏邮箱（通用函数，与排行榜一致）
+  const displayName = computed(() =>
+    resolveDisplayName(user.value?.nickname ?? null, user.value?.email ?? ''),
   )
 
   async function login(email: string, password: string) {

@@ -1,13 +1,13 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import HomeView from '@/views/HomeView.vue'
 import ProgressView from '@/views/ProgressView.vue'
-import ExamView from '@/views/ExamView.vue'
 import ExamPaperView from '@/views/ExamPaperView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import AdminView from '@/views/AdminView.vue'
 import FeedbackView from '@/views/FeedbackView.vue'
+import LeaderboardView from '@/views/LeaderboardView.vue'
 import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
@@ -23,11 +23,6 @@ const router = createRouter({
       path: '/progress',
       name: 'progress',
       component: ProgressView,
-    },
-    {
-      path: '/exam',
-      name: 'exam',
-      component: ExamView,
     },
     {
       path: '/exam-paper',
@@ -57,10 +52,20 @@ const router = createRouter({
       component: FeedbackView,
     },
     {
+      path: '/leaderboard',
+      name: 'leaderboard',
+      component: LeaderboardView,
+    },
+    {
       path: '/admin',
       name: 'admin',
       component: AdminView,
       meta: { adminOnly: true },
+    },
+    // 未匹配的路由（如已删除的 /exam）统一重定向到首页
+    {
+      path: '/:pathMatch(.*)*',
+      redirect: '/',
     },
   ],
 })

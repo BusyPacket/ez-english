@@ -23,6 +23,11 @@ export class ProgressController {
     return this.progressService.getSummary(request.user.sub)
   }
 
+  @Get('leaderboard')
+  getLeaderboard() {
+    return this.progressService.getLeaderboard()
+  }
+
   @Put(':pointId')
   upsert(
     @Param('pointId') pointId: string,

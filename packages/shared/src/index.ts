@@ -16,6 +16,21 @@ export const STATUS_OPTIONS: { label: string; value: KnowledgeStatus }[] = [
   { label: '已掌握', value: KnowledgeStatus.Mastered },
 ]
 
+/** 邮箱脱敏：保留前 2 位，中间用星号代替（如 fr******@example.com）。前后端通用 */
+export function maskEmail(email: string): string {
+  const atIndex = email.indexOf('@')
+  if (atIndex <= 1) return email
+  const local = email.slice(0, atIndex)
+  const domain = email.slice(atIndex)
+  const visible = local.slice(0, 2)
+  return `${visible}${'*'.repeat(Math.max(local.length - visible.length, 4))}${domain}`
+}
+
+/** 展示名：昵称优先，否则用脱敏邮箱。前后端通用 */
+export function displayName(nickname: string | null | undefined, email: string): string {
+  return nickname?.trim() ? nickname : maskEmail(email)
+}
+
 export interface KnowledgePoint {
   id: string
   title: string

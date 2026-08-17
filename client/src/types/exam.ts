@@ -1,8 +1,10 @@
 export interface ExamQuestion {
   no: number
-  stem: string
+  stem?: string
   choices?: string[] // 选项文本，对应 A/B/C/D
   answer?: string // 参考答案：选择题为选项字母，翻译/问答/写作为文本
+  point?: string // 考点
+  analysis?: string // 解析
 }
 
 export interface ExamPassage {

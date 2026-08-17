@@ -109,6 +109,14 @@ onMounted(async () => {
                     <n-tag size="small" type="success" :bordered="false">答案</n-tag>
                     {{ q.answer }}
                   </div>
+                  <div v-if="showAnswer && q.point" class="q-meta">
+                    <n-tag size="small" type="info" :bordered="false">考点</n-tag>
+                    {{ q.point }}
+                  </div>
+                  <div v-if="showAnswer && q.analysis" class="q-analysis">
+                    <n-tag size="small" type="warning" :bordered="false">解析</n-tag>
+                    {{ q.analysis }}
+                  </div>
                 </div>
               </div>
             </div>
@@ -126,6 +134,14 @@ onMounted(async () => {
                 <div v-if="showAnswer && q.answer" class="q-answer">
                   <n-tag size="small" type="success" :bordered="false">答案</n-tag>
                   {{ q.answer }}
+                </div>
+                <div v-if="showAnswer && q.point" class="q-meta">
+                  <n-tag size="small" type="info" :bordered="false">考点</n-tag>
+                  {{ q.point }}
+                </div>
+                <div v-if="showAnswer && q.analysis" class="q-analysis">
+                  <n-tag size="small" type="warning" :bordered="false">解析</n-tag>
+                  {{ q.analysis }}
                 </div>
               </div>
             </div>
@@ -215,6 +231,19 @@ onMounted(async () => {
   margin-top: 6px;
   color: var(--n-success-color);
   font-weight: 500;
+}
+
+.q-meta {
+  margin-top: 6px;
+  color: var(--n-info-color);
+  font-weight: 500;
+}
+
+.q-analysis {
+  margin-top: 4px;
+  color: var(--n-text-color-3);
+  font-size: 13px;
+  line-height: 1.7;
 }
 
 .question {

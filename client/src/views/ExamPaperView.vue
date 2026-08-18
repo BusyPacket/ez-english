@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { api } from '@/api/http'
 import { useUserStore } from '@/stores/user'
+import BackToTop from '@/components/BackToTop.vue'
 import type { ExamPaper, ExamPart, ExamQuestion } from '@/types/exam'
 
 const route = useRoute()
@@ -40,6 +41,19 @@ function partScore(part: ExamPart) {
 const showSimilarModal = ref(false)
 const similarQuestion = ref<{ q: ExamQuestion; context: string } | null>(null)
 
+/** AI 生成状态与结果 */
+const generating = ref(false)
+const generatedQuestion = ref<GeneratedQuestion | null>(null)
+
+interface GeneratedQuestion {
+  stem?: string
+  choices?: string[]
+  answer?: string
+  point?: string
+  analysis?: string
+  context?: string
+}
+
 /** 生成类似题目：需 AI 可用；点击先弹出题目详情（上下文/题目/考点/解析） */
 function onGenerateSimilar(q: ExamQuestion, context: string) {
   if (!userStore.aiAvailable) {
@@ -48,7 +62,40 @@ function onGenerateSimilar(q: ExamQuestion, context: string) {
     return
   }
   similarQuestion.value = { q, context }
+  generatedQuestion.value = null
   showSimilarModal.value = true
+}
+
+/** 确认生成：调用后端 AI 接口生成一道类似题目 */
+async function confirmGenerate() {
+  if (generating.value) return
+  if (!similarQuestion.value) return
+  const { q, context } = similarQuestion.value
+  if (!q.stem || !q.answer) {
+    message.warning('该题型暂不支持 AI 生成')
+    return
+  }
+  generating.value = true
+  try {
+    generatedQuestion.value = await api<GeneratedQuestion>('/ai/generate-question', {
+      method: 'POST',
+      body: JSON.stringify({
+        example: {
+          stem: q.stem,
+          choices: q.choices,
+          answer: q.answer,
+          point: q.point,
+          analysis: q.analysis,
+          context,
+        },
+      }),
+    })
+    message.success('已生成类似题目')
+  } catch (e) {
+    message.error((e as Error).message)
+  } finally {
+    generating.value = false
+  }
 }
 
 async function loadPaper(year: number) {
@@ -327,12 +374,38 @@ onMounted(async () => {
             <div class="sim-analysis">{{ similarQuestion.q.analysis }}</div>
           </div>
         </div>
+
+        <div v-if="generatedQuestion" class="sim-generated">
+          <div class="sim-label">✨ 已生成类似题目</div>
+          <div class="sim-stem">{{ generatedQuestion.stem }}</div>
+          <ul v-if="generatedQuestion.choices" class="q-choices">
+            <li v-for="(choice, i) in generatedQuestion.choices" :key="i">
+              <span class="opt-letter">{{ optionLetters[i] }}</span>
+              {{ choice }}
+            </li>
+          </ul>
+          <div v-if="generatedQuestion.answer" class="q-answer">
+            <n-tag size="small" type="success" :bordered="false">答案</n-tag>
+            {{ generatedQuestion.answer }}
+          </div>
+          <div v-if="generatedQuestion.point" class="q-meta">
+            <n-tag size="small" type="info" :bordered="false">考点</n-tag>
+            {{ generatedQuestion.point }}
+          </div>
+          <div v-if="generatedQuestion.analysis" class="q-analysis">
+            <n-tag size="small" type="warning" :bordered="false">解析</n-tag>
+            {{ generatedQuestion.analysis }}
+          </div>
+        </div>
         <template #footer>
           <n-space justify="end">
             <n-button @click="showSimilarModal = false">关闭</n-button>
+            <n-button :loading="generating" type="primary" @click="confirmGenerate">确认生成</n-button>
           </n-space>
         </template>
       </n-modal>
+
+      <BackToTop />
     </template>
   </div>
 </template>
@@ -525,6 +598,13 @@ onMounted(async () => {
   color: var(--n-text-color-3);
   font-size: 0.8125rem;
   line-height: 1.7;
+}
+
+/* 已生成题目：与上方参考例题区隔开 */
+.sim-generated {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px dashed var(--n-border-color);
 }
 
 .question {

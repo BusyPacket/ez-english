@@ -104,6 +104,19 @@ export class ProfileService {
     return { message: 'AI 配置已保存' }
   }
 
+  /** 获取当前用户的 AI 调用配置（API Key + 模型），供 AI 生成功能使用；未配置则报错 */
+  async getChatConfig(userId: string): Promise<{ apiKey: string; model: string }> {
+    const row = await db
+      .select()
+      .from(schema.profiles)
+      .where(eq(schema.profiles.userId, userId))
+      .get()
+    if (!row?.apiKey) {
+      throw new BadRequestException('请先在个人资料中保存 API Key')
+    }
+    return { apiKey: row.apiKey, model: row.model }
+  }
+
   /** 取当前用户已保存的 API Key（未设置则报错） */
   private async getApiKey(userId: string): Promise<string> {
     const row = await db

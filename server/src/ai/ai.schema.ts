@@ -19,6 +19,14 @@ export const generateQuestionSchema = z.object({
 
 export type GenerateQuestionDto = z.infer<typeof generateQuestionSchema>
 
+/** 练习生成请求体：考点 + 题型 */
+export const generatePracticeSchema = z.object({
+  point: z.string().min(1),
+  type: z.enum(['single', 'fill', 'judge']),
+})
+
+export type GeneratePracticeDto = z.infer<typeof generatePracticeSchema>
+
 /** 校验 AI 返回的题目（服务端兜底，防止模型自由发挥字段名） */
 export const generatedQuestionSchema = z.object({
   stem: z.string(),

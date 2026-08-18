@@ -8,6 +8,7 @@ import ProfileView from '@/views/ProfileView.vue'
 import AdminView from '@/views/AdminView.vue'
 import FeedbackView from '@/views/FeedbackView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
+import PracticeView from '@/views/PracticeView.vue'
 import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
@@ -23,6 +24,11 @@ const router = createRouter({
       path: '/progress',
       name: 'progress',
       component: ProgressView,
+    },
+    {
+      path: '/practice',
+      name: 'practice',
+      component: PracticeView,
     },
     {
       path: '/exam-paper',

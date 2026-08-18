@@ -1,8 +1,10 @@
 <script setup lang="ts">
 import { computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { knowledgeSections, STATUS_OPTIONS, type KnowledgeStatus } from '@/data/knowledgePoints'
 import { useProgressStore } from '@/stores/progress'
 
+const router = useRouter()
 const progressStore = useProgressStore()
 
 // 挂载时从后端拉取当前用户的学习进度与汇总（百分比由后端计算）
@@ -25,6 +27,11 @@ function onStatusChange(pointId: string, value: string | number | null) {
   if (typeof value === 'string') {
     progressStore.setStatus(pointId, value as KnowledgeStatus)
   }
+}
+
+/** 跳转到练习页，带入考点 id 与标题 */
+function openPractice(id: string, title: string) {
+  router.push({ path: '/practice', query: { point: id, title } })
 }
 </script>
 
@@ -49,14 +56,22 @@ function onStatusChange(pointId: string, value: string | number | null) {
               <div class="point-group">{{ point.title }}</div>
               <div v-for="child in point.children" :key="child.id" class="point-row point-row-sub">
                 <span class="point-title">{{ child.title }}</span>
-                <n-select size="small" style="width: 120px" :value="progressStore.getStatus(child.id)"
-                  :options="STATUS_OPTIONS" @update:value="(value) => onStatusChange(child.id, value)" />
+                <n-button size="tiny" secondary class="practice-btn" @click="openPractice(child.id, child.title)">
+                  练习
+                </n-button>
+                <n-select class="point-select" size="small" style="width: 120px"
+                  :value="progressStore.getStatus(child.id)" :options="STATUS_OPTIONS"
+                  @update:value="(value) => onStatusChange(child.id, value)" />
               </div>
             </template>
             <div v-else class="point-row">
               <span class="point-title">{{ point.title }}</span>
-              <n-select size="small" style="width: 120px" :value="progressStore.getStatus(point.id)"
-                :options="STATUS_OPTIONS" @update:value="(value) => onStatusChange(point.id, value)" />
+              <n-button size="tiny" secondary class="practice-btn" @click="openPractice(point.id, point.title)">
+                练习
+              </n-button>
+              <n-select class="point-select" size="small" style="width: 120px"
+                :value="progressStore.getStatus(point.id)" :options="STATUS_OPTIONS"
+                @update:value="(value) => onStatusChange(point.id, value)" />
             </div>
           </template>
         </n-space>
@@ -84,13 +99,27 @@ function onStatusChange(pointId: string, value: string | number | null) {
 .point-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: 12px;
-  padding: 6px 0;
+  padding: 6px 8px;
+}
+
+/* hover：标题变绿加粗 */
+.point-row:hover .point-title {
+  color: #18a058;
+  font-weight: 600;
 }
 
 .point-title {
-  flex: 1;
+  font-weight: 500;
+}
+
+.practice-btn {
+  flex-shrink: 0;
+}
+
+/* 状态选择器靠右，练习按钮贴近标题 */
+.point-select {
+  margin-left: auto;
 }
 
 /* 词类分组标题：相对「词汇」缩进 */

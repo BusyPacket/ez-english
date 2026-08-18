@@ -1,9 +1,10 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common'
 import { DeepSeekClient } from './deepseek'
 import { ProfileService } from '../users/profile.service'
-import { GENERATE_QUESTION_SYSTEM_PROMPT } from './prompts'
+import { GENERATE_QUESTION_SYSTEM_PROMPT, generatePracticeSystemPrompt } from './prompts'
 import {
   generatedQuestionSchema,
+  type GeneratePracticeDto,
   type GenerateQuestionDto,
   type GeneratedQuestion,
 } from './ai.schema'
@@ -28,6 +29,24 @@ export class AiService {
     const raw = await this.deepseek.chat(apiKey, model, [
       { role: 'system', content: GENERATE_QUESTION_SYSTEM_PROMPT },
       { role: 'user', content: userContent },
+    ])
+
+    const question = this.parseJson(raw)
+    const result = generatedQuestionSchema.safeParse(question)
+    if (!result.success) {
+      throw new InternalServerErrorException('AI 返回的题目格式不符合预期')
+    }
+    return result.data
+  }
+
+  /** 按考点与题型生成一道练习例题 */
+  async generatePractice(userId: string, dto: GeneratePracticeDto): Promise<GeneratedQuestion> {
+    const { apiKey, model } = await this.profileService.getChatConfig(userId)
+    await this.profileService.assertSufficientBalance(userId, MIN_BALANCE)
+
+    const typeLabel = { single: '单选题', fill: '填空题', judge: '判断题' }[dto.type]
+    const raw = await this.deepseek.chat(apiKey, model, [
+      { role: 'system', content: generatePracticeSystemPrompt(dto.point, typeLabel) },
     ])
 
     const question = this.parseJson(raw)

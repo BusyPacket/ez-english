@@ -4,6 +4,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { api } from '@/api/http'
 import { useUserStore } from '@/stores/user'
+import MarkdownView from '@/components/MarkdownView.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -79,6 +80,12 @@ async function generateQuestion() {
         })
         generatedType.value = questionType.value // 锁定当前题目题型
         resetAnswer()
+        // 以新题目为追问上下文的起点
+        followUpMessages.value = [
+            { role: 'assistant', content: '已生成题目：\n' + questionContext(generated.value) },
+        ]
+        followUpList.value = []
+        followUpInput.value = ''
         message.success('已生成题目')
     } catch (e) {
         message.error((e as Error).message)
@@ -137,6 +144,51 @@ function submitAnswer() {
     }
     isCorrect.value = correct
     submitted.value = true
+}
+
+/** 追问状态 */
+const followUpInput = ref('')
+const followUpAsking = ref(false)
+const followUpList = ref<{ question: string; reply: string }[]>([])
+const followUpMessages = ref<{ role: 'user' | 'assistant'; content: string }[]>([])
+
+/** 生成题目的可读上下文文本（供追问携带） */
+function questionContext(q: GeneratedQuestion): string {
+    const parts = [`题目：${q.stem}`]
+    if (q.choices?.length) {
+        parts.push(`选项：${q.choices.map((c, i) => `${optionLetters[i]}. ${c}`).join('；')}`)
+    }
+    parts.push(`答案：${q.answer}`)
+    if (q.analysis) parts.push(`解析：${q.analysis}`)
+    return parts.join('\n')
+}
+
+/** 追问：携带此前多轮上下文，回答用户新问题 */
+async function askFollowUp() {
+    const question = followUpInput.value.trim()
+    if (!question || followUpAsking.value || !generated.value) return
+    followUpAsking.value = true
+    try {
+        const res = await api<{ reply: string }>('/ai/follow-up', {
+            method: 'POST',
+            body: JSON.stringify({
+                point: route.query.point ?? '',
+                type: generatedType.value,
+                history: followUpMessages.value,
+                question,
+            }),
+        })
+        followUpMessages.value.push(
+            { role: 'user', content: question },
+            { role: 'assistant', content: res.reply },
+        )
+        followUpList.value.push({ question, reply: res.reply })
+        followUpInput.value = ''
+    } catch (e) {
+        message.error((e as Error).message)
+    } finally {
+        followUpAsking.value = false
+    }
 }
 </script>
 
@@ -212,6 +264,24 @@ function submitAnswer() {
                 <div v-if="generated.point" class="gen-point">考点：{{ generated.point }}</div>
                 <div v-if="generated.analysis" class="gen-analysis">解析：{{ generated.analysis }}</div>
             </template>
+        </n-card>
+
+        <n-card v-if="generated" class="followup-card" size="small">
+            <div class="followup-label">💬 追问</div>
+            <div v-if="followUpList.length" class="followup-list">
+                <div v-for="(item, i) in followUpList" :key="i" class="followup-item">
+                    <div class="followup-q">问：{{ item.question }}</div>
+                    <div class="followup-a">
+                        <div class="followup-a-label">答：</div>
+                        <MarkdownView :content="item.reply" />
+                    </div>
+                </div>
+            </div>
+            <div class="followup-row">
+                <n-input v-model:value="followUpInput" size="small" placeholder="输入问题，追问这道题…" :disabled="followUpAsking"
+                    @keyup.enter="askFollowUp" />
+                <n-button size="small" :loading="followUpAsking" @click="askFollowUp">追问</n-button>
+            </div>
         </n-card>
     </div>
 </template>
@@ -342,5 +412,47 @@ function submitAnswer() {
     margin-top: 4px;
     color: var(--n-text-color-3);
     line-height: 1.7;
+}
+
+.followup-card {
+    margin-top: 16px;
+}
+
+.followup-label {
+    font-weight: 600;
+    margin-bottom: 8px;
+}
+
+.followup-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 10px;
+    max-height: 440px;
+    overflow-y: auto;
+}
+
+.followup-item {
+    background: var(--n-card-color, rgba(128, 128, 128, 0.06));
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+
+.followup-q {
+    color: var(--n-text-color-2);
+}
+
+.followup-a {
+    margin-top: 4px;
+}
+
+.followup-a-label {
+    font-weight: 500;
+    margin-bottom: 2px;
+}
+
+.followup-row {
+    display: flex;
+    gap: 8px;
 }
 </style>

@@ -13,6 +13,7 @@ declare module 'vue' {
   export interface GlobalComponents {
     AppNavbar: typeof import('./components/AppNavbar.vue')['default']
     BackToTop: typeof import('./components/BackToTop.vue')['default']
+    MarkdownView: typeof import('./components/MarkdownView.vue')['default']
     NA: typeof import('naive-ui')['NA']
     NAlert: typeof import('naive-ui')['NAlert']
     NBackTop: typeof import('naive-ui')['NBackTop']

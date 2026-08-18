@@ -27,6 +27,23 @@ export const generatePracticeSchema = z.object({
 
 export type GeneratePracticeDto = z.infer<typeof generatePracticeSchema>
 
+/** 追问消息（多轮对话历史） */
+export const followUpMessageSchema = z.object({
+  role: z.enum(['user', 'assistant']),
+  content: z.string(),
+})
+
+/** 追问请求体：考点 + 题型 + 历史消息 + 新问题 */
+export const generateFollowUpSchema = z.object({
+  point: z.string().min(1),
+  type: z.enum(['single', 'fill', 'judge']),
+  history: z.array(followUpMessageSchema),
+  question: z.string().min(1),
+})
+
+export type FollowUpMessage = z.infer<typeof followUpMessageSchema>
+export type GenerateFollowUpDto = z.infer<typeof generateFollowUpSchema>
+
 /** 校验 AI 返回的题目（服务端兜底，防止模型自由发挥字段名） */
 export const generatedQuestionSchema = z.object({
   stem: z.string(),

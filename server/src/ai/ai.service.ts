@@ -1,9 +1,10 @@
 import { Injectable, InternalServerErrorException } from '@nestjs/common'
-import { DeepSeekClient } from './deepseek'
+import { DeepSeekClient, type ChatMessage } from './deepseek'
 import { ProfileService } from '../users/profile.service'
 import { GENERATE_QUESTION_SYSTEM_PROMPT, generatePracticeSystemPrompt } from './prompts'
 import {
   generatedQuestionSchema,
+  type GenerateFollowUpDto,
   type GeneratePracticeDto,
   type GenerateQuestionDto,
   type GeneratedQuestion,
@@ -55,6 +56,21 @@ export class AiService {
       throw new InternalServerErrorException('AI 返回的题目格式不符合预期')
     }
     return result.data
+  }
+
+  /** 追问：携带此前多轮上下文，回答用户新问题 */
+  async generateFollowUp(userId: string, dto: GenerateFollowUpDto): Promise<{ reply: string }> {
+    const { apiKey, model } = await this.profileService.getChatConfig(userId)
+    await this.profileService.assertSufficientBalance(userId, MIN_BALANCE)
+
+    const typeLabel = { single: '单选题', fill: '填空题', judge: '判断题' }[dto.type]
+    const messages: ChatMessage[] = [
+      { role: 'system', content: generatePracticeSystemPrompt(dto.point, typeLabel) },
+      ...dto.history,
+      { role: 'user', content: dto.question },
+    ]
+    const reply = await this.deepseek.chat(apiKey, model, messages, { jsonMode: false })
+    return { reply }
   }
 
   /** 解析模型返回文本为 JSON，兼容 ```json ``` 代码块包裹 */

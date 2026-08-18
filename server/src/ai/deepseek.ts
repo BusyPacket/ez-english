@@ -20,7 +20,7 @@ export class DeepSeekClient {
     apiKey: string,
     model: string,
     messages: ChatMessage[],
-    options?: { temperature?: number },
+    options?: { temperature?: number; jsonMode?: boolean },
   ): Promise<string> {
     const response = await fetch(`${this.baseUrl}/chat/completions`, {
       method: 'POST',
@@ -32,8 +32,8 @@ export class DeepSeekClient {
         model,
         messages,
         temperature: options?.temperature ?? 0.7,
-        // JSON 模式：强制模型输出合法 JSON（配合 prompt 中的 JSON 说明）
-        response_format: { type: 'json_object' },
+        // JSON 模式：生成题目时强制合法 JSON；追问等自由对话可关闭（jsonMode: false）
+        ...(options?.jsonMode === false ? {} : { response_format: { type: 'json_object' } }),
       }),
     })
 

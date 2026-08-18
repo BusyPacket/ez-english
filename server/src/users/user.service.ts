@@ -7,10 +7,12 @@ import {
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
 import { count, eq, like, or } from 'drizzle-orm'
 import { db, schema } from '../database/database'
+import { SettingsService } from '../settings/settings.service'
 import { UserRole, type RegisterDto } from './user.schema'
 
 @Injectable()
 export class UserService {
+  constructor(private readonly settingsService: SettingsService) {}
   async findByEmail(email: string) {
     return db.select().from(schema.users).where(eq(schema.users.email, email)).get()
   }
@@ -84,6 +86,12 @@ export class UserService {
   }
 
   async create(dto: RegisterDto) {
+    // 注册开关校验：未开放则拒绝（后端兜底，防止绕过前端）
+    const { open } = await this.settingsService.getRegistrationOpen()
+    if (!open) {
+      throw new BadRequestException('注册暂未开放')
+    }
+
     const existing = await this.findByEmail(dto.email)
     if (existing) {
       throw new ConflictException('该邮箱已注册')

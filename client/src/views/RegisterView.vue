@@ -1,13 +1,25 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import type { FormInst, FormRules } from 'naive-ui'
+import { api } from '@/api/http'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const message = useMessage()
 const userStore = useUserStore()
+
+/** 注册是否开放（默认开放，挂载时从后端读取） */
+const regOpen = ref(true)
+onMounted(async () => {
+  try {
+    const res = await api<{ open: boolean }>('/settings/registration-open')
+    regOpen.value = res.open
+  } catch {
+    regOpen.value = true
+  }
+})
 
 const formRef = ref<FormInst>()
 const loading = ref(false)
@@ -40,6 +52,10 @@ async function handleSubmit() {
   } catch {
     return
   }
+  if (!regOpen.value) {
+    message.error('注册未开放')
+    return
+  }
   loading.value = true
   try {
     await userStore.register(form.value.email, form.value.password)
@@ -57,26 +73,19 @@ async function handleSubmit() {
   <div class="auth-page">
     <n-card class="auth-card">
       <n-h2 class="auth-title">注册</n-h2>
+      <n-alert v-if="!regOpen" type="warning" :bordered="false" class="reg-closed-alert">
+        注册暂未开放，请联系管理员
+      </n-alert>
       <n-form ref="formRef" :model="form" :rules="rules" size="large">
         <n-form-item label="邮箱" path="email">
           <n-input v-model:value="form.email" placeholder="用户名即邮箱" />
         </n-form-item>
         <n-form-item label="密码" path="password">
-          <n-input
-            v-model:value="form.password"
-            type="password"
-            show-password-on="click"
-            placeholder="至少 6 位"
-          />
+          <n-input v-model:value="form.password" type="password" show-password-on="click" placeholder="至少 6 位" />
         </n-form-item>
         <n-form-item label="确认密码" path="confirmPassword">
-          <n-input
-            v-model:value="form.confirmPassword"
-            type="password"
-            show-password-on="click"
-            placeholder="再次输入密码"
-            @keyup.enter="handleSubmit"
-          />
+          <n-input v-model:value="form.confirmPassword" type="password" show-password-on="click" placeholder="再次输入密码"
+            @keyup.enter="handleSubmit" />
         </n-form-item>
         <n-button type="primary" block :loading="loading" @click="handleSubmit">
           注册
@@ -103,5 +112,9 @@ async function handleSubmit() {
 .auth-tip {
   margin-top: 16px;
   text-align: center;
+}
+
+.reg-closed-alert {
+  margin-bottom: 16px;
 }
 </style>

@@ -173,9 +173,34 @@ const feedbackColumns: DataTableColumns<FeedbackRow> = [
   },
 ]
 
+// —— 系统设置 ——
+const regOpen = ref(true)
+async function fetchRegOpen() {
+  try {
+    const res = await api<{ open: boolean }>('/settings/registration-open')
+    regOpen.value = res.open
+  } catch {
+    // 读取失败保持默认
+  }
+}
+async function toggleRegOpen(value: boolean) {
+  try {
+    await api('/settings/registration-open', {
+      method: 'PUT',
+      body: JSON.stringify({ open: value }),
+    })
+    regOpen.value = value
+    message.success(value ? '已开放注册' : '已关闭注册')
+  } catch (e) {
+    message.error((e as Error).message)
+    fetchRegOpen() // 失败回滚显示
+  }
+}
+
 onMounted(() => {
   fetchUsers()
   fetchFeedback()
+  fetchRegOpen()
 })
 </script>
 
@@ -191,6 +216,17 @@ onMounted(() => {
       <n-data-table :columns="columns" :data="data" :loading="loading" :bordered="false" :row-key="(row) => row.id" />
       <n-pagination class="admin-pagination" :page="page" :page-size="pageSize" :item-count="total"
         @update:page="(p) => { page = p; fetchUsers() }" />
+    </n-card>
+
+    <n-card class="settings-card">
+      <n-h2>系统设置</n-h2>
+      <div class="setting-row">
+        <span class="setting-label">开放注册</span>
+        <n-switch :value="regOpen" @update:value="toggleRegOpen" />
+        <n-tag size="small" :type="regOpen ? 'success' : 'warning'" :bordered="false">
+          {{ regOpen ? '开放中' : '已关闭' }}
+        </n-tag>
+      </div>
     </n-card>
 
     <n-card class="feedback-card">
@@ -220,5 +256,19 @@ onMounted(() => {
 
 .feedback-card {
   margin-top: 16px;
+}
+
+.settings-card {
+  margin-top: 16px;
+}
+
+.setting-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.setting-label {
+  font-weight: 500;
 }
 </style>

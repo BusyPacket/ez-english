@@ -8,6 +8,7 @@ import { UserModule } from './users/user.module'
 import { PapersModule } from './papers/papers.module'
 import { FeedbackModule } from './feedback/feedback.module'
 import { AiModule } from './ai/ai.module'
+import { SettingsModule } from './settings/settings.module'
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { AiModule } from './ai/ai.module'
     PapersModule,
     FeedbackModule,
     AiModule,
+    SettingsModule,
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET ?? 'ez-english-dev-secret',

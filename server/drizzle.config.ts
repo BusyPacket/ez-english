@@ -4,4 +4,7 @@ export default defineConfig({
   dialect: 'sqlite',
   schema: './src/database/schema.ts',
   out: './drizzle',
+  dbCredentials: {
+    url: 'file:./data/ez-english.db',
+  },
 })

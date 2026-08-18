@@ -39,6 +39,10 @@ export class DeepSeekClient {
 
     if (!response.ok) {
       const detail = await response.text()
+      // 余额不足：DeepSeek 返回 HTTP 402，或错误信息包含 balance/insufficient
+      if (response.status === 402 || /insufficient|balance/i.test(detail)) {
+        throw new Error('DeepSeek API 余额不足，请前往 platform.deepseek.com 充值或更换 API Key')
+      }
       throw new Error(`DeepSeek API ${response.status}: ${detail.slice(0, 500)}`)
     }
 

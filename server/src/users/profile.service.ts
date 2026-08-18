@@ -177,4 +177,35 @@ export class ProfileService {
       throw new BadRequestException('网络错误，无法连接 DeepSeek 服务')
     }
   }
+
+  /**
+   * 生成前余额检查：余额低于 minBalance（元）时抛错阻止生成；
+   * 查询失败（网络等）时不阻塞，交由后续调用兜底。
+   */
+  async assertSufficientBalance(userId: string, minBalance: number) {
+    const apiKey = await this.getApiKey(userId)
+    try {
+      const res = await fetch(`${DEEPSEEK_API}/user/balance`, {
+        headers: { Authorization: `Bearer ${apiKey}`, Accept: 'application/json' },
+      })
+      if (res.status === 401) throw new BadRequestException('API Key 无效或已过期')
+      if (!res.ok) return // 查询失败不阻塞
+      const data = (await res.json()) as {
+        is_available?: boolean
+        balance_infos?: { total_balance?: string }[]
+      }
+      if (data.is_available === false) {
+        throw new BadRequestException('DeepSeek 账户不可用，请检查 API Key 或账户状态')
+      }
+      const total = Number.parseFloat(data.balance_infos?.[0]?.total_balance ?? '0')
+      if (Number.isFinite(total) && total < minBalance) {
+        throw new BadRequestException(
+          `API 余额不足（当前约 ¥${total.toFixed(2)}），低于 ¥${minBalance.toFixed(2)}，请前往 platform.deepseek.com 充值`,
+        )
+      }
+    } catch (e) {
+      if (e instanceof BadRequestException) throw e
+      // 网络等其它错误：不阻塞生成
+    }
+  }
 }

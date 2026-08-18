@@ -9,6 +9,7 @@ import AdminView from '@/views/AdminView.vue'
 import FeedbackView from '@/views/FeedbackView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
 import PracticeView from '@/views/PracticeView.vue'
+import FavoritesView from '@/views/FavoritesView.vue'
 import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
@@ -29,6 +30,11 @@ const router = createRouter({
       path: '/practice',
       name: 'practice',
       component: PracticeView,
+    },
+    {
+      path: '/favorites',
+      name: 'favorites',
+      component: FavoritesView,
     },
     {
       path: '/exam-paper',

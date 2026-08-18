@@ -14,6 +14,7 @@ const menuOptions = [
   { label: '首页', key: '/' },
   { label: '进度', key: '/progress' },
   { label: '真题', key: '/exam-paper' },
+  { label: '收藏', key: '/favorites' },
   { label: '排行榜', key: '/leaderboard' },
   { label: '反馈', key: '/feedback' },
 ]

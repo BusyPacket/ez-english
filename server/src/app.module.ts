@@ -9,6 +9,7 @@ import { PapersModule } from './papers/papers.module'
 import { FeedbackModule } from './feedback/feedback.module'
 import { AiModule } from './ai/ai.module'
 import { SettingsModule } from './settings/settings.module'
+import { FavoritesModule } from './favorites/favorites.module'
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { SettingsModule } from './settings/settings.module'
     FeedbackModule,
     AiModule,
     SettingsModule,
+    FavoritesModule,
     JwtModule.register({
       global: true,
       secret: process.env.JWT_SECRET ?? 'ez-english-dev-secret',

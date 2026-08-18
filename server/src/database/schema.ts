@@ -68,6 +68,29 @@ export const settings = sqliteTable('settings', {
   updatedAt: text('updated_at').notNull(),
 })
 
+// 收藏夹表（用户收藏的 AI 生成题目快照）
+export const favorites = sqliteTable('favorites', {
+  id: text('id').primaryKey(),
+  // 收藏者用户 id（关联 users.id）
+  userId: text('user_id').notNull(),
+  // 所属考点 id（来自 /practice?point=）
+  pointId: text('point_id').notNull(),
+  // 考点中文标题
+  pointTitle: text('point_title'),
+  // 题型：single / fill / judge
+  type: text('type').notNull(),
+  // 题干
+  stem: text('stem').notNull(),
+  // 选项（JSON 数组字符串，仅选择题）
+  choices: text('choices'),
+  // 答案
+  answer: text('answer').notNull(),
+  // 解析
+  analysis: text('analysis'),
+  // 收藏时间：带时区的 UTC 时间（ISO 8601）
+  createdAt: text('created_at').notNull(),
+})
+
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Progress = typeof progress.$inferSelect
@@ -78,3 +101,5 @@ export type Profile = typeof profiles.$inferSelect
 export type NewProfile = typeof profiles.$inferInsert
 export type Setting = typeof settings.$inferSelect
 export type NewSetting = typeof settings.$inferInsert
+export type Favorite = typeof favorites.$inferSelect
+export type NewFavorite = typeof favorites.$inferInsert

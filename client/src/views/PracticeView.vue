@@ -80,6 +80,7 @@ async function generateQuestion() {
         })
         generatedType.value = questionType.value // 锁定当前题目题型
         resetAnswer()
+        favoriteId.value = null // 新题未收藏
         // 以新题目为追问上下文的起点
         followUpMessages.value = [
             { role: 'assistant', content: '已生成题目：\n' + questionContext(generated.value) },
@@ -144,6 +145,42 @@ function submitAnswer() {
     }
     isCorrect.value = correct
     submitted.value = true
+}
+
+/** 收藏状态 */
+const favoriting = ref(false)
+const favoriteId = ref<string | null>(null)
+
+/** 收藏 / 取消收藏当前题目 */
+async function toggleFavorite() {
+    if (!generated.value || favoriting.value) return
+    favoriting.value = true
+    try {
+        if (favoriteId.value) {
+            await api(`/favorites/${favoriteId.value}`, { method: 'DELETE' })
+            favoriteId.value = null
+            message.success('已取消收藏')
+        } else {
+            const res = await api<{ id: string }>('/favorites', {
+                method: 'POST',
+                body: JSON.stringify({
+                    pointId: route.query.point ?? '',
+                    pointTitle: practiceTitle.value,
+                    type: generatedType.value,
+                    stem: generated.value.stem,
+                    choices: generated.value.choices,
+                    answer: generated.value.answer,
+                    analysis: generated.value.analysis,
+                }),
+            })
+            favoriteId.value = res.id
+            message.success('已收藏')
+        }
+    } catch (e) {
+        message.error((e as Error).message)
+    } finally {
+        favoriting.value = false
+    }
 }
 
 /** 追问状态 */
@@ -212,7 +249,7 @@ async function askFollowUp() {
                     </n-radio-group>
                 </n-space>
                 <n-button type="success" :loading="generating" @click="generateQuestion">{{ generateBtnText
-                }}</n-button>
+                    }}</n-button>
             </n-space>
         </n-card>
 
@@ -251,6 +288,10 @@ async function askFollowUp() {
             </div>
 
             <div class="gen-actions">
+                <n-button size="small" :loading="favoriting" :type="favoriteId ? 'warning' : 'default'"
+                    @click="toggleFavorite">
+                    {{ favoriteId ? '★ 已收藏' : '☆ 收藏' }}
+                </n-button>
                 <n-button size="small" type="primary" :disabled="submitted" @click="submitAnswer">提交答案</n-button>
             </div>
 

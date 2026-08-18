@@ -1,6 +1,12 @@
 import { Injectable } from '@nestjs/common'
 import { eq } from 'drizzle-orm'
-import { displayName, KnowledgeStatus, maskEmail, totalPointCount } from '@ez-english/shared'
+import {
+  allPointIds,
+  displayName,
+  KnowledgeStatus,
+  maskEmail,
+  totalPointCount,
+} from '@ez-english/shared'
 import { db, schema } from '../database/database'
 import type { UpdateProgressDto } from './progress.schema'
 
@@ -31,6 +37,7 @@ export class ProgressService {
   }
 
   /** 学习进度汇总：各状态计数 + 已掌握百分比（后端计算） */
+  // 统计口径基于 @ez-english/shared 的 totalPointCount 与 allPointIds（叶子考点）
   async getSummary(userId: string) {
     const rows = await db
       .select()
@@ -45,7 +52,9 @@ export class ProgressService {
       [KnowledgeStatus.Learned]: 0,
       [KnowledgeStatus.Mastered]: 0,
     }
+    const validIds = new Set(allPointIds)
     for (const row of rows) {
+      if (!validIds.has(row.pointId)) continue // 忽略历史孤儿记录
       const s = row.status as KnowledgeStatus
       if (counts[s] !== undefined) {
         counts[s]++
@@ -64,10 +73,11 @@ export class ProgressService {
     const users = await db.select().from(schema.users).all()
     const rows = await db.select().from(schema.progress).all()
 
-    // 统计每个用户的已掌握考点数
+    // 统计每个用户的已掌握考点数（只算合法叶子考点，忽略历史孤儿记录）
+    const validIds = new Set(allPointIds)
     const masteredByUser = new Map<string, number>()
     for (const row of rows) {
-      if (row.status === KnowledgeStatus.Mastered) {
+      if (row.status === KnowledgeStatus.Mastered && validIds.has(row.pointId)) {
         masteredByUser.set(row.userId, (masteredByUser.get(row.userId) ?? 0) + 1)
       }
     }

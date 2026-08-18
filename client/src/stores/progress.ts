@@ -1,14 +1,12 @@
 import { ref } from 'vue'
 import { defineStore } from 'pinia'
-import { KnowledgeStatus, knowledgeSections } from '@ez-english/shared'
+import { KnowledgeStatus, allPointIds } from '@ez-english/shared'
 import { api } from '@/api/http'
 
 const KEY = 'ez-english-progress'
 
-// 当前所有有效学习考点的 id 集合，用于过滤掉已失效的旧状态
-const VALID_IDS = new Set<string>(
-  knowledgeSections.flatMap((section) => section.points.map((p) => p.id)),
-)
+// 当前所有有效学习考点的 id 集合（含二级叶子），用于过滤掉已失效的旧状态
+const VALID_IDS = new Set<string>(allPointIds)
 
 interface ProgressRow {
   userId: string

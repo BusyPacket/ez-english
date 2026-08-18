@@ -44,11 +44,21 @@ function onStatusChange(pointId: string, value: string | number | null) {
     <n-collapse :default-expanded-names="knowledgeSections.map((s) => s.id)">
       <n-collapse-item v-for="section in knowledgeSections" :key="section.id" :name="section.id" :title="section.title">
         <n-space vertical>
-          <div v-for="point in section.points" :key="point.id" class="point-row">
-            <span class="point-title">{{ point.title }}</span>
-            <n-select size="small" style="width: 120px" :value="progressStore.getStatus(point.id)"
-              :options="STATUS_OPTIONS" @update:value="(value) => onStatusChange(point.id, value)" />
-          </div>
+          <template v-for="point in section.points" :key="point.id">
+            <template v-if="point.children?.length">
+              <div class="point-group">{{ point.title }}</div>
+              <div v-for="child in point.children" :key="child.id" class="point-row point-row-sub">
+                <span class="point-title">{{ child.title }}</span>
+                <n-select size="small" style="width: 120px" :value="progressStore.getStatus(child.id)"
+                  :options="STATUS_OPTIONS" @update:value="(value) => onStatusChange(child.id, value)" />
+              </div>
+            </template>
+            <div v-else class="point-row">
+              <span class="point-title">{{ point.title }}</span>
+              <n-select size="small" style="width: 120px" :value="progressStore.getStatus(point.id)"
+                :options="STATUS_OPTIONS" @update:value="(value) => onStatusChange(point.id, value)" />
+            </div>
+          </template>
         </n-space>
       </n-collapse-item>
     </n-collapse>
@@ -81,5 +91,18 @@ function onStatusChange(pointId: string, value: string | number | null) {
 
 .point-title {
   flex: 1;
+}
+
+/* 词类分组标题：相对「词汇」缩进 */
+.point-group {
+  font-weight: 600;
+  color: var(--n-text-color-2);
+  padding: 8px 0 2px 22px;
+  font-size: 0.875rem;
+}
+
+/* 二级考点：相对分组标题再缩进 */
+.point-row-sub {
+  padding-left: 44px;
 }
 </style>

@@ -12,6 +12,12 @@ export const users = sqliteTable('users', {
   role: text('role').notNull().default('user'),
   // 注册时间：带时区的 UTC 时间（ISO 8601）
   createdAt: text('created_at').notNull(),
+  // 最近活跃时间（登录时更新）：带时区的 UTC 时间（ISO 8601）
+  lastActiveAt: text('last_active_at'),
+  // 最近登录 IP
+  lastLoginIp: text('last_login_ip'),
+  // 最近登录 IP 所在地区（国家/省/市）
+  lastLoginRegion: text('last_login_region'),
 })
 
 // 学习进度表（按用户维度：user_id + point_id 联合主键）

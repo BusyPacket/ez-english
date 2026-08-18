@@ -11,6 +11,9 @@ interface UserRow {
   nickname: string | null
   role: string
   createdAt: string
+  lastActiveAt?: string | null
+  lastLoginIp?: string | null
+  lastLoginRegion?: string | null
 }
 
 interface PageResult {
@@ -47,6 +50,21 @@ const columns: DataTableColumns<UserRow> = [
     title: '注册时间',
     key: 'createdAt',
     render: (row) => dayjs(row.createdAt).format('YYYY-MM-DD HH:mm'),
+  },
+  {
+    title: '最近登录',
+    key: 'lastLoginIp',
+    render: (row) =>
+      row.lastLoginIp
+        ? `${row.lastLoginIp}${row.lastLoginRegion ? `（${row.lastLoginRegion}）` : ''}`
+        : '-',
+    ellipsis: { tooltip: true },
+  },
+  {
+    title: '上次活跃',
+    key: 'lastActiveAt',
+    render: (row) =>
+      row.lastActiveAt ? dayjs(row.lastActiveAt).format('YYYY-MM-DD HH:mm') : '-',
   },
   {
     title: '操作',

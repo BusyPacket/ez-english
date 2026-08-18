@@ -20,6 +20,8 @@ const createdAt = computed(() =>
   userStore.user?.createdAt ? dayjs(userStore.user.createdAt).format('YYYY-MM-DD HH:mm') : '-',
 )
 
+
+
 // 昵称修改
 const nicknameInput = ref(userStore.user?.nickname ?? '')
 const editingNickname = ref(false)
@@ -289,6 +291,9 @@ onMounted(loadAiConfig)
           {{ createdAt }}
         </n-descriptions-item>
       </n-descriptions>
+      <n-button secondary block class="pwd-btn" @click="openPwdModal">
+        修改密码
+      </n-button>
     </n-card>
     <n-card class="ai-card" size="small" title="AI 配置">
       <n-space vertical :size="12">
@@ -344,9 +349,6 @@ onMounted(loadAiConfig)
         </div>
       </n-space>
     </n-card>
-    <n-button secondary block class="pwd-btn" @click="openPwdModal">
-      修改密码
-    </n-button>
     <n-button type="error" block class="logout-btn" @click="handleLogout">
       退出登录
     </n-button>
@@ -402,7 +404,7 @@ onMounted(loadAiConfig)
 }
 
 .logout-btn {
-  margin-top: 12px;
+  margin-top: 30px;
 }
 
 .ai-card {

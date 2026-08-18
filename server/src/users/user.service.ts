@@ -30,6 +30,9 @@ export class UserService {
         nickname: schema.users.nickname,
         role: schema.users.role,
         createdAt: schema.users.createdAt,
+        lastActiveAt: schema.users.lastActiveAt,
+        lastLoginIp: schema.users.lastLoginIp,
+        lastLoginRegion: schema.users.lastLoginRegion,
       })
       .from(schema.users)
       .where(where)
@@ -83,6 +86,15 @@ export class UserService {
       .where(eq(schema.users.id, id))
       .run()
     return { message: '密码修改成功' }
+  }
+
+  /** 记录登录信息（IP、地区、活跃时间） */
+  async recordLogin(id: string, ip: string, region: string | null, lastActiveAt: string) {
+    await db
+      .update(schema.users)
+      .set({ lastLoginIp: ip, lastLoginRegion: region, lastActiveAt })
+      .where(eq(schema.users.id, id))
+      .run()
   }
 
   async create(dto: RegisterDto) {

@@ -58,7 +58,7 @@ onBeforeUnmount(() => {
                 :class="{ running: timerRunning }">
                 <template #icon>
                     <span class="timer-icon" :class="{ 'timer-text': timerRunning }">{{ timerRunning ? timerText : '⏱️'
-                        }}</span>
+                    }}</span>
                 </template>
             </n-button>
         </template>
@@ -87,6 +87,11 @@ onBeforeUnmount(() => {
     letter-spacing: 0.5px;
     white-space: nowrap;
     color: #18a058;
+}
+
+/* 计时进行中按钮变宽，左右留出间距，避免紧贴用户名/主题按钮 */
+.timer-trigger.running {
+    margin: 0 8px;
 }
 
 .timer-card {

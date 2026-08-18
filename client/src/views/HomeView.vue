@@ -40,16 +40,21 @@ function parseExamPoint(title: string): { name: string; detail: string } {
 
 <style scoped>
 .home {
-  min-height: 100vh;
+  /* 扣除导航栏高度，保证一屏放得下、无滚动条 */
+  min-height: calc(100vh - var(--navbar-h));
+  /* padding 计入高度，避免内容超出视口产生滚动条 */
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  /* 内容靠上排列，避免标题上方留白过大 */
+  justify-content: flex-start;
   gap: 36px;
-  padding: 40px 16px;
+  padding: 28px 16px 60px;
 }
 
 .home-hero {
+  margin-top: 5%;
   display: flex;
   flex-direction: column;
   align-items: center;

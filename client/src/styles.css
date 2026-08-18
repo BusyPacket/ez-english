@@ -4,6 +4,8 @@
  */
 :root {
   --base-font-size: 18px;
+  /* 导航栏总高（含 1px 边框），供页面用 calc(100vh - 该值) 精确占满一屏 */
+  --navbar-h: 57px;
 }
 
 html {

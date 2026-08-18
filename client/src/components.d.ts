@@ -37,6 +37,7 @@ declare module 'vue' {
     NModal: typeof import('naive-ui')['NModal']
     NP: typeof import('naive-ui')['NP']
     NPagination: typeof import('naive-ui')['NPagination']
+    NPopover: typeof import('naive-ui')['NPopover']
     NProgress: typeof import('naive-ui')['NProgress']
     NSelect: typeof import('naive-ui')['NSelect']
     NSpace: typeof import('naive-ui')['NSpace']
@@ -48,5 +49,6 @@ declare module 'vue' {
     NTimelineItem: typeof import('naive-ui')['NTimelineItem']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    TimerWidget: typeof import('./components/TimerWidget.vue')['default']
   }
 }

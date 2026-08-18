@@ -71,6 +71,8 @@ async function loadPaper(year: number) {
     error.value = (e as Error).message
   } finally {
     loading.value = false
+    // 切换年份时 .toc-sidebar 随 v-else-if 分支重建，需在 loading 结束后重新对齐（此时侧栏才渲染）
+    nextTick(syncSidebarPosition)
   }
 }
 

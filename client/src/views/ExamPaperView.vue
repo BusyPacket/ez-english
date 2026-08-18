@@ -44,6 +44,8 @@ const similarQuestion = ref<{ q: ExamQuestion; context: string } | null>(null)
 /** AI 生成状态与结果 */
 const generating = ref(false)
 const generatedQuestion = ref<GeneratedQuestion | null>(null)
+/** 生成结果区是否显示答案/考点/解析（默认隐藏） */
+const showGeneratedAnswer = ref(false)
 
 interface GeneratedQuestion {
   stem?: string
@@ -54,6 +56,12 @@ interface GeneratedQuestion {
   context?: string
 }
 
+/** 生成按钮文案：生成中 → 生成中；已生成过 → 再来一题；否则 → 确认生成 */
+const generateBtnText = computed(() => {
+  if (generating.value) return '生成中'
+  return generatedQuestion.value ? '再来一题' : '确认生成'
+})
+
 /** 生成类似题目：需 AI 可用；点击先弹出题目详情（上下文/题目/考点/解析） */
 function onGenerateSimilar(q: ExamQuestion, context: string) {
   if (!userStore.aiAvailable) {
@@ -63,6 +71,7 @@ function onGenerateSimilar(q: ExamQuestion, context: string) {
   }
   similarQuestion.value = { q, context }
   generatedQuestion.value = null
+  showGeneratedAnswer.value = false
   showSimilarModal.value = true
 }
 
@@ -76,6 +85,7 @@ async function confirmGenerate() {
     return
   }
   generating.value = true
+  showGeneratedAnswer.value = false // 生成新题目时刷新答案显示状态为不显示
   try {
     generatedQuestion.value = await api<GeneratedQuestion>('/ai/generate-question', {
       method: 'POST',
@@ -384,23 +394,30 @@ onMounted(async () => {
               {{ choice }}
             </li>
           </ul>
-          <div v-if="generatedQuestion.answer" class="q-answer">
-            <n-tag size="small" type="success" :bordered="false">答案</n-tag>
-            {{ generatedQuestion.answer }}
+          <div class="gen-answer-toggle">
+            <n-button size="tiny" secondary @click="showGeneratedAnswer = !showGeneratedAnswer">
+              {{ showGeneratedAnswer ? '隐藏答案' : '显示答案' }}
+            </n-button>
           </div>
-          <div v-if="generatedQuestion.point" class="q-meta">
-            <n-tag size="small" type="info" :bordered="false">考点</n-tag>
-            {{ generatedQuestion.point }}
-          </div>
-          <div v-if="generatedQuestion.analysis" class="q-analysis">
-            <n-tag size="small" type="warning" :bordered="false">解析</n-tag>
-            {{ generatedQuestion.analysis }}
-          </div>
+          <template v-if="showGeneratedAnswer">
+            <div v-if="generatedQuestion.answer" class="gen-answer">
+              <n-tag size="small" type="success" :bordered="false">答案</n-tag>
+              <span class="gen-answer-text">{{ generatedQuestion.answer }}</span>
+            </div>
+            <div v-if="generatedQuestion.point" class="q-meta">
+              <n-tag size="small" type="info" :bordered="false">考点</n-tag>
+              {{ generatedQuestion.point }}
+            </div>
+            <div v-if="generatedQuestion.analysis" class="q-analysis">
+              <n-tag size="small" type="warning" :bordered="false">解析</n-tag>
+              {{ generatedQuestion.analysis }}
+            </div>
+          </template>
         </div>
         <template #footer>
           <n-space justify="end">
             <n-button @click="showSimilarModal = false">关闭</n-button>
-            <n-button :loading="generating" type="primary" @click="confirmGenerate">确认生成</n-button>
+            <n-button :loading="generating" type="primary" @click="confirmGenerate">{{ generateBtnText }}</n-button>
           </n-space>
         </template>
       </n-modal>
@@ -605,6 +622,22 @@ onMounted(async () => {
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px dashed var(--n-border-color);
+}
+
+.gen-answer-toggle {
+  margin-top: 8px;
+}
+
+.gen-answer {
+  margin-top: 8px;
+  color: var(--n-success-color);
+  font-weight: 500;
+}
+
+.gen-answer-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.7;
 }
 
 .question {

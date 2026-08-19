@@ -68,6 +68,7 @@ export const knowledgeSections: KnowledgeSection[] = [
         children: [
           { id: 'noun-count', title: '可数名词与不可数名词' },
           { id: 'noun-plural', title: '名词单复数变化' },
+          { id: 'noun-measure', title: '不可数名词的计量（piece of 等）' },
           { id: 'noun-possessive', title: '名词所有格' },
         ],
       },
@@ -77,6 +78,7 @@ export const knowledgeSections: KnowledgeSection[] = [
         children: [
           { id: 'det-basic', title: '常用限定词（some/any/many/much 等）' },
           { id: 'det-quantifier', title: '数量限定词与可数/不可数搭配' },
+          { id: 'det-order', title: '限定词的位置与排序（前/中/后位）' },
         ],
       },
       {
@@ -85,7 +87,9 @@ export const knowledgeSections: KnowledgeSection[] = [
         children: [
           { id: 'pron-personal', title: '人称代词与物主代词' },
           { id: 'pron-reflexive', title: '反身代词' },
+          { id: 'pron-interrogative', title: '疑问代词（who/whom/whose 等）' },
           { id: 'pron-indefinite', title: '不定代词（复合不定代词）' },
+          { id: 'pron-reciprocal', title: '相互代词（each other / one another）' },
           { id: 'pron-demonstrative', title: '指示代词' },
         ],
       },
@@ -104,7 +108,8 @@ export const knowledgeSections: KnowledgeSection[] = [
         children: [
           { id: 'num-cardinal', title: '基数词' },
           { id: 'num-ordinal', title: '序数词' },
-          { id: 'num-expression', title: '分数、日期、编号等表达' },
+          { id: 'num-expression', title: '分数、小数、日期与编号表达' },
+          { id: 'num-arithmetic', title: '算术表达（plus/minus/equals 等）' },
         ],
       },
       {
@@ -139,6 +144,8 @@ export const knowledgeSections: KnowledgeSection[] = [
         children: [
           { id: 'prep-time', title: '时间介词' },
           { id: 'prep-place', title: '地点介词' },
+          { id: 'prep-manner', title: '方式介词（by/with/through 等）' },
+          { id: 'prep-reason', title: '原因介词（for/because of）' },
           { id: 'prep-collocation', title: '常用介词搭配（动+介 / 形+介）' },
         ],
       },
@@ -157,6 +164,7 @@ export const knowledgeSections: KnowledgeSection[] = [
           { id: 'verb-transitive', title: '及物动词与不及物动词' },
           { id: 'verb-link', title: '系动词' },
           { id: 'verb-auxiliary', title: '助动词与情态动词' },
+          { id: 'verb-durative', title: '延续性动词与瞬时性动词' },
           { id: 'verb-nonfinite', title: '非谓语动词（不定式/动名词/分词）' },
           { id: 'verb-phrasal', title: '短语动词与固定搭配' },
         ],

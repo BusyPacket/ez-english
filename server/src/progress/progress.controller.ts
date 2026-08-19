@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Param, Put, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Param, Put, Query, Req, UseGuards } from '@nestjs/common'
 import { JwtAuthGuard } from '../common/jwt-auth.guard'
 import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import { updateProgressSchema, type UpdateProgressDto } from './progress.schema'
@@ -24,8 +24,8 @@ export class ProgressController {
   }
 
   @Get('leaderboard')
-  getLeaderboard() {
-    return this.progressService.getLeaderboard()
+  getLeaderboard(@Query('type') type?: string) {
+    return this.progressService.getLeaderboard(type === 'answer' ? 'answer' : 'progress')
   }
 
   @Put(':pointId')

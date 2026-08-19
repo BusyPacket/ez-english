@@ -1,4 +1,4 @@
-import { primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
 
 // 用户表（Drizzle schema，单一权威定义）
 export const users = sqliteTable('users', {
@@ -18,6 +18,8 @@ export const users = sqliteTable('users', {
   lastLoginIp: text('last_login_ip'),
   // 最近登录 IP 所在地区（国家/省/市）
   lastLoginRegion: text('last_login_region'),
+  // 答题数（每次提交一道题目 +1）
+  answerCount: integer('answer_count').notNull().default(0),
 })
 
 // 学习进度表（按用户维度：user_id + point_id 联合主键）

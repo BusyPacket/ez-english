@@ -87,6 +87,8 @@ function submitAnswer() {
     }
     isCorrect.value = correct
     submitted.value = true
+    // 上报答题数（后台统计，失败不影响答题体验）
+    void api('/profile/answer', { method: 'POST' }).catch(() => { })
 }
 
 // —— 收藏 ——

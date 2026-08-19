@@ -68,12 +68,24 @@ export class ProgressService {
     return { total: totalPointCount, counts, masteredPercent }
   }
 
-  /** 学习进度排行榜：按已掌握数降序（排除管理员），昵称优先、邮箱脱敏 */
-  async getLeaderboard() {
+  /** 排行榜：type=progress 按已掌握考点数，type=answer 按答题数；均降序，昵称优先、邮箱脱敏 */
+  async getLeaderboard(type: 'progress' | 'answer' = 'progress') {
     const users = await db.select().from(schema.users).all()
-    const rows = await db.select().from(schema.progress).all()
 
-    // 统计每个用户的已掌握考点数（只算合法叶子考点，忽略历史孤儿记录）
+    // 按答题数排行（users.answer_count）
+    if (type === 'answer') {
+      const list = users.map((user) => ({
+        userId: user.id,
+        name: displayName(user.nickname, user.email),
+        maskedEmail: maskEmail(user.email),
+        answerCount: user.answerCount ?? 0,
+      }))
+      list.sort((a, b) => b.answerCount - a.answerCount || a.userId.localeCompare(b.userId))
+      return list.map((item, index) => ({ rank: index + 1, ...item }))
+    }
+
+    // 按已掌握考点数排行
+    const rows = await db.select().from(schema.progress).all()
     const validIds = new Set(allPointIds)
     const masteredByUser = new Map<string, number>()
     for (const row of rows) {
@@ -96,7 +108,6 @@ export class ProgressService {
 
     // 按已掌握数降序，并列时按用户 id 稳定排序
     list.sort((a, b) => b.masteredCount - a.masteredCount || a.userId.localeCompare(b.userId))
-
     return list.map((item, index) => ({ rank: index + 1, ...item }))
   }
 }

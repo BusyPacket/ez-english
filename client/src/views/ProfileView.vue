@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import dayjs from 'dayjs'
 import { api } from '@/api/http'
-import { useUserStore } from '@/stores/user'
+import { useUserStore, type User } from '@/stores/user'
 
 const router = useRouter()
 const message = useMessage()
@@ -257,7 +257,20 @@ async function queryBalance() {
   }
 }
 
-onMounted(loadAiConfig)
+/** 拉取最新个人资料（含答题数）并更新本地用户 */
+async function loadProfile() {
+  try {
+    const profile = await api<User>('/profile')
+    userStore.setProfile(profile)
+  } catch {
+    // 拉取失败保持本地数据
+  }
+}
+
+onMounted(() => {
+  loadProfile()
+  loadAiConfig()
+})
 </script>
 
 <template>
@@ -289,6 +302,9 @@ onMounted(loadAiConfig)
         </n-descriptions-item>
         <n-descriptions-item label="注册时间">
           {{ createdAt }}
+        </n-descriptions-item>
+        <n-descriptions-item label="答题数">
+          {{ userStore.user?.answerCount ?? 0 }}
         </n-descriptions-item>
       </n-descriptions>
       <n-button secondary block class="pwd-btn" @click="openPwdModal">

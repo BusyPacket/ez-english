@@ -30,6 +30,24 @@ const QUESTIONS = [
       'child 的复数是不规则的 children，不是 childs。o 结尾少数加 es（tomato→tomatoes）、多数加 s（photo→photos）；foot→feet 改变元音。',
   },
   {
+    pointId: 'noun-plural',
+    pointTitle: '名词单复数变化',
+    stem: '下列名词的复数形式书写正确的是？',
+    choices: ['story → storys', 'knife → knifes', 'box → boxes', 'day → daies'],
+    answer: 'C',
+    analysis:
+      'box 以 x 结尾加 es（boxes）；辅音 + y 结尾去 y 加 ies（story→stories）；以 fe 结尾变 ves（knife→knives）；day 是元音 + y 结尾直接加 s（days）。',
+  },
+  {
+    pointId: 'noun-plural',
+    pointTitle: '名词单复数变化',
+    stem: '— How many ___ do you have? — Five.',
+    choices: ['tooth', 'teeth', 'toothes', 'teeths'],
+    answer: 'B',
+    analysis:
+      'tooth 的复数是不规则变化 teeth（改变元音）；没有 toothes / teeths 形式。How many 后接可数名词复数。',
+  },
+  {
     pointId: 'noun-measure',
     pointTitle: '不可数名词的计量（piece of 等）',
     stem: '下列计量表达正确的是？',

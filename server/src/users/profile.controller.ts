@@ -21,6 +21,12 @@ export class ProfileController {
     private readonly profileService: ProfileService,
   ) {}
 
+  /** 当前用户资料（含答题数） */
+  @Get()
+  getProfile(@Req() req: { user: { sub: string } }) {
+    return this.userService.getProfile(req.user.sub)
+  }
+
   @Patch('nickname')
   updateNickname(
     @Req() req: { user: { sub: string } },
@@ -35,6 +41,12 @@ export class ProfileController {
     @Body(new ZodValidationPipe(changePasswordSchema)) dto: ChangePasswordDto,
   ) {
     return this.userService.updatePassword(req.user.sub, dto.currentPassword, dto.newPassword)
+  }
+
+  /** 答题数 +1（提交一道题目时上报） */
+  @Post('answer')
+  incrementAnswer(@Req() req: { user: { sub: string } }) {
+    return this.userService.incrementAnswerCount(req.user.sub)
   }
 
   @Get('ai-options')

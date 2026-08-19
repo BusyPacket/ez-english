@@ -13,7 +13,7 @@ function parseExamPoint(title: string): { name: string; detail: string } {
 <template>
   <div class="home">
     <div class="home-hero">
-      <n-h1>专升本英语学习站</n-h1>
+      <n-h1>浙江专升本英语学习站</n-h1>
       <n-p>让学习英语变得简单。</n-p>
       <n-button type="primary" size="large" @click="router.push('/progress')">开始学习</n-button>
     </div>

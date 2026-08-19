@@ -1,0 +1,1 @@
+ALTER TABLE `users` ADD `answer_count` integer DEFAULT 0 NOT NULL;

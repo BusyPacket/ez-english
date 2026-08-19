@@ -5,7 +5,7 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
-import { count, eq, like, or } from 'drizzle-orm'
+import { count, eq, like, or, sql } from 'drizzle-orm'
 import { db, schema } from '../database/database'
 import { SettingsService } from '../settings/settings.service'
 import { UserRole, type RegisterDto } from './user.schema'
@@ -49,6 +49,40 @@ export class UserService {
     if (result.rowsAffected === 0) {
       throw new NotFoundException('用户不存在')
     }
+  }
+
+  /** 答题数 +1（每次提交一道题目），返回最新答题数 */
+  async incrementAnswerCount(id: string) {
+    const updated = await db
+      .update(schema.users)
+      .set({ answerCount: sql`${schema.users.answerCount} + 1` })
+      .where(eq(schema.users.id, id))
+      .returning({ answerCount: schema.users.answerCount })
+      .get()
+    if (!updated) {
+      throw new NotFoundException('用户不存在')
+    }
+    return updated.answerCount
+  }
+
+  /** 获取当前用户资料（不含密码，含答题数） */
+  async getProfile(id: string) {
+    const user = await db
+      .select({
+        id: schema.users.id,
+        email: schema.users.email,
+        nickname: schema.users.nickname,
+        role: schema.users.role,
+        createdAt: schema.users.createdAt,
+        answerCount: schema.users.answerCount,
+      })
+      .from(schema.users)
+      .where(eq(schema.users.id, id))
+      .get()
+    if (!user) {
+      throw new NotFoundException('用户不存在')
+    }
+    return user
   }
 
   /** 修改当前用户昵称，返回更新后的用户信息（不含密码） */

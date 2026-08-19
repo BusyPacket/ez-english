@@ -9,6 +9,7 @@ export interface User {
   nickname: string | null
   role: string
   createdAt: string
+  answerCount?: number
 }
 
 interface LoginResult {
@@ -93,6 +94,12 @@ export const useUserStore = defineStore('user', () => {
     return updated
   }
 
+  /** 用最新资料更新本地用户（含答题数等，写回缓存） */
+  function setProfile(profile: User) {
+    user.value = profile
+    localStorage.setItem(USER_KEY, JSON.stringify(profile))
+  }
+
   /** 修改密码：校验当前密码并更新为新密码 */
   async function changePassword(
     currentPassword: string,
@@ -124,6 +131,7 @@ export const useUserStore = defineStore('user', () => {
     login,
     register,
     updateNickname,
+    setProfile,
     changePassword,
     logout,
   }

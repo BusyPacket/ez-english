@@ -215,6 +215,17 @@ async function toggleRegOpen(value: boolean) {
   }
 }
 
+// —— 后台导航（桌面侧边栏 + 移动端顶部标签） ——
+type AdminTab = 'users' | 'settings' | 'feedback'
+
+const currentTab = ref<AdminTab>('users')
+
+const menuOptions = [
+  { label: '用户管理', key: 'users' },
+  { label: '系统设置', key: 'settings' },
+  { label: '反馈管理', key: 'feedback' },
+]
+
 onMounted(() => {
   fetchUsers()
   fetchFeedback()
@@ -224,41 +235,96 @@ onMounted(() => {
 
 <template>
   <div class="admin-page">
-    <n-card>
-      <n-h2>用户管理</n-h2>
-      <div class="toolbar">
-        <n-input v-model:value="keyword" placeholder="搜索邮箱或昵称" clearable style="max-width: 280px"
-          @keyup.enter="handleSearch" />
-        <n-button type="primary" @click="handleSearch">搜索</n-button>
-      </div>
-      <n-data-table :columns="columns" :data="data" :loading="loading" :bordered="false" :row-key="(row) => row.id" />
-      <n-pagination class="admin-pagination" :page="page" :page-size="pageSize" :item-count="total"
-        @update:page="(p) => { page = p; fetchUsers() }" />
-    </n-card>
+    <div class="admin-layout">
+      <!-- 侧边栏（桌面端显示） -->
+      <aside class="admin-sider">
+        <n-card size="small" :bordered="true">
+          <n-menu :value="currentTab" :options="menuOptions" @update:value="(v) => (currentTab = v as AdminTab)" />
+        </n-card>
+      </aside>
 
-    <n-card class="settings-card">
-      <n-h2>系统设置</n-h2>
-      <div class="setting-row">
-        <span class="setting-label">开放注册</span>
-        <n-switch :value="regOpen" @update:value="toggleRegOpen" />
-        <n-tag size="small" :type="regOpen ? 'success' : 'warning'" :bordered="false">
-          {{ regOpen ? '开放中' : '已关闭' }}
-        </n-tag>
-      </div>
-    </n-card>
+      <!-- 内容区 -->
+      <div class="admin-content">
+        <!-- 移动端顶部标签导航（桌面端隐藏） -->
+        <n-tabs class="admin-tabs" v-model:value="currentTab" type="line" animated>
+          <n-tab name="users" tab="用户管理" />
+          <n-tab name="settings" tab="系统设置" />
+          <n-tab name="feedback" tab="反馈管理" />
+        </n-tabs>
 
-    <n-card class="feedback-card">
-      <n-h2>反馈管理</n-h2>
-      <n-data-table :columns="feedbackColumns" :data="feedbackList" :bordered="false" :row-key="(row) => row.id" />
-    </n-card>
+        <!-- 用户管理 -->
+        <div v-show="currentTab === 'users'">
+          <n-card>
+            <n-h2>用户管理</n-h2>
+            <div class="toolbar">
+              <n-input v-model:value="keyword" placeholder="搜索邮箱或昵称" clearable style="max-width: 280px"
+                @keyup.enter="handleSearch" />
+              <n-button type="primary" @click="handleSearch">搜索</n-button>
+            </div>
+            <n-data-table :columns="columns" :data="data" :loading="loading" :bordered="false"
+              :row-key="(row) => row.id" />
+            <n-pagination class="admin-pagination" :page="page" :page-size="pageSize" :item-count="total"
+              @update:page="(p) => { page = p; fetchUsers() }" />
+          </n-card>
+        </div>
+
+        <!-- 系统设置 -->
+        <div v-show="currentTab === 'settings'">
+          <n-card>
+            <n-h2>系统设置</n-h2>
+            <div class="setting-row">
+              <span class="setting-label">开放注册</span>
+              <n-switch :value="regOpen" @update:value="toggleRegOpen" />
+              <n-tag size="small" :type="regOpen ? 'success' : 'warning'" :bordered="false">
+                {{ regOpen ? '开放中' : '已关闭' }}
+              </n-tag>
+            </div>
+          </n-card>
+        </div>
+
+        <!-- 反馈管理 -->
+        <div v-show="currentTab === 'feedback'">
+          <n-card>
+            <n-h2>反馈管理</n-h2>
+            <n-data-table :columns="feedbackColumns" :data="feedbackList" :bordered="false"
+              :row-key="(row) => row.id" />
+          </n-card>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <style scoped>
 .admin-page {
-  max-width: 960px;
+  max-width: 1080px;
   margin: 0 auto;
   padding: 24px 16px;
+}
+
+.admin-layout {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+/* 侧边栏：桌面端显示，固定左侧 */
+.admin-sider {
+  width: 190px;
+  flex-shrink: 0;
+  position: sticky;
+  top: 16px;
+}
+
+.admin-content {
+  flex: 1;
+  min-width: 0;
+}
+
+/* 移动端顶部标签导航（默认隐藏） */
+.admin-tabs {
+  display: none;
+  margin-bottom: 4px;
 }
 
 .toolbar {
@@ -272,14 +338,6 @@ onMounted(() => {
   justify-content: flex-end;
 }
 
-.feedback-card {
-  margin-top: 16px;
-}
-
-.settings-card {
-  margin-top: 16px;
-}
-
 .setting-row {
   display: flex;
   align-items: center;
@@ -288,5 +346,29 @@ onMounted(() => {
 
 .setting-label {
   font-weight: 500;
+}
+
+/* 移动端（<768px）：侧边栏收起，改用顶部标签导航 */
+@media (max-width: 767px) {
+  .admin-page {
+    padding: 12px 8px;
+  }
+
+  .admin-layout {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .admin-sider {
+    display: none;
+  }
+
+  .admin-tabs {
+    display: block;
+  }
+
+  .admin-content {
+    width: 100%;
+  }
 }
 </style>

@@ -55,7 +55,7 @@ function openPractice(id: string, title: string) {
             <template v-if="point.children?.length">
               <div class="point-group">{{ point.title }}</div>
               <div v-for="child in point.children" :key="child.id" class="point-row point-row-sub">
-                <span class="point-title">{{ child.title }}</span>
+                <span class="point-title" @click="openPractice(child.id, child.title)">{{ child.title }}</span>
                 <n-button size="tiny" secondary class="practice-btn" @click="openPractice(child.id, child.title)">
                   练习
                 </n-button>
@@ -65,7 +65,7 @@ function openPractice(id: string, title: string) {
               </div>
             </template>
             <div v-else class="point-row">
-              <span class="point-title">{{ point.title }}</span>
+              <span class="point-title" @click="openPractice(point.id, point.title)">{{ point.title }}</span>
               <n-button size="tiny" secondary class="practice-btn" @click="openPractice(point.id, point.title)">
                 练习
               </n-button>
@@ -103,14 +103,16 @@ function openPractice(id: string, title: string) {
   padding: 6px 8px;
 }
 
-/* hover：标题变绿加粗 */
-.point-row:hover .point-title {
-  color: #18a058;
-  font-weight: 600;
-}
-
+/* 考点标题可点击跳转练习页 */
 .point-title {
   font-weight: 500;
+  cursor: pointer;
+}
+
+/* hover：标题变绿加粗 */
+.point-title:hover {
+  color: #18a058;
+  font-weight: 600;
 }
 
 .practice-btn {

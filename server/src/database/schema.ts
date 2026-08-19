@@ -91,6 +91,27 @@ export const favorites = sqliteTable('favorites', {
   createdAt: text('created_at').notNull(),
 })
 
+// 例题表（内置单选题，覆盖各考点，供练习与抽题使用）
+export const questions = sqliteTable('questions', {
+  id: text('id').primaryKey(),
+  // 题目类型：single（单选题，当前唯一）
+  type: text('type').notNull().default('single'),
+  // 考点 id（来自共享大纲 allPointIds）
+  pointId: text('point_id').notNull(),
+  // 考点中文标题
+  pointTitle: text('point_title'),
+  // 题干
+  stem: text('stem').notNull(),
+  // 选项（JSON 数组字符串，单选题 4 个选项）
+  choices: text('choices').notNull(),
+  // 正确答案（选项标识，如 A）
+  answer: text('answer').notNull(),
+  // 解析
+  analysis: text('analysis'),
+  // 创建时间：带时区的 UTC 时间（ISO 8601）
+  createdAt: text('created_at').notNull(),
+})
+
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Progress = typeof progress.$inferSelect
@@ -103,3 +124,5 @@ export type Setting = typeof settings.$inferSelect
 export type NewSetting = typeof settings.$inferInsert
 export type Favorite = typeof favorites.$inferSelect
 export type NewFavorite = typeof favorites.$inferInsert
+export type Question = typeof questions.$inferSelect
+export type NewQuestion = typeof questions.$inferInsert

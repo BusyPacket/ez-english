@@ -4,6 +4,7 @@ import { NButton, NPopconfirm, NTag, useMessage } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
 import dayjs from 'dayjs'
 import { api } from '@/api/http'
+import { knowledgeSections } from '@/data/knowledgePoints'
 
 interface UserRow {
   id: string
@@ -191,6 +192,222 @@ const feedbackColumns: DataTableColumns<FeedbackRow> = [
   },
 ]
 
+// —— 例题管理 ——
+interface QuestionPreviewRow {
+  id: string
+  pointId: string
+  pointTitle: string | null
+  type: string
+  stemPreview: string
+}
+
+interface QuestionDetail {
+  id: string
+  type: string
+  pointId: string
+  pointTitle: string | null
+  stem: string
+  choices: string[]
+  answer: string
+  analysis: string | null
+}
+
+const optionLetters = ['A', 'B', 'C', 'D']
+
+const typeLabels: Record<string, string> = {
+  single: '单选题',
+  fill: '填空题',
+  judge: '判断题',
+}
+
+// 考点筛选选项（扁平化全部叶子考点）
+const pointOptions = knowledgeSections.flatMap((s) =>
+  s.points.flatMap((p) =>
+    p.children?.length
+      ? p.children.map((c) => ({ label: c.title, value: c.id }))
+      : [{ label: p.title, value: p.id }],
+  ),
+)
+
+const questionPointFilter = ref<string | null>(null)
+
+const questionRows = ref<QuestionPreviewRow[]>([])
+const questionTotal = ref(0)
+const questionPage = ref(1)
+const questionPageSize = 10
+const questionLoading = ref(false)
+const questionKeyword = ref('')
+const questionSearchKeyword = ref('')
+
+async function fetchQuestions() {
+  questionLoading.value = true
+  try {
+    const params = new URLSearchParams({
+      page: String(questionPage.value),
+      pageSize: String(questionPageSize),
+    })
+    if (questionSearchKeyword.value) params.set('keyword', questionSearchKeyword.value)
+    if (questionPointFilter.value) params.set('pointId', questionPointFilter.value)
+    const res = await api<{ items: QuestionPreviewRow[]; total: number }>(
+      `/questions/admin/list?${params.toString()}`,
+    )
+    questionRows.value = res.items
+    questionTotal.value = res.total
+  } finally {
+    questionLoading.value = false
+  }
+}
+
+function handleQuestionSearch() {
+  questionPage.value = 1
+  questionSearchKeyword.value = questionKeyword.value.trim()
+  fetchQuestions()
+}
+
+// 详情弹窗
+const detailVisible = ref(false)
+const detailLoading = ref(false)
+const detail = ref<QuestionDetail | null>(null)
+
+async function openDetail(id: string) {
+  detailVisible.value = true
+  detailLoading.value = true
+  detail.value = null
+  try {
+    detail.value = await api<QuestionDetail>(`/questions/${id}`)
+  } catch (e) {
+    message.error((e as Error).message)
+    detailVisible.value = false
+  } finally {
+    detailLoading.value = false
+  }
+}
+
+/** 从详情进入编辑：关闭详情弹窗并打开编辑弹窗 */
+function editFromDetail() {
+  if (!detail.value) return
+  const id = detail.value.id
+  detailVisible.value = false
+  openEdit(id)
+}
+
+/** 删除题目（二次确认后）：删除并刷新列表 */
+async function handleDeleteQuestion() {
+  if (!detail.value) return
+  const id = detail.value.id
+  try {
+    await api(`/questions/${id}`, { method: 'DELETE' })
+    message.success('已删除')
+    detailVisible.value = false
+    // 当前页若被删空且非第一页，回退一页
+    if (questionRows.value.length <= 1 && questionPage.value > 1) {
+      questionPage.value -= 1
+    }
+    fetchQuestions()
+  } catch (e) {
+    message.error((e as Error).message)
+  }
+}
+
+// 编辑弹窗
+const editVisible = ref(false)
+const editLoading = ref(false)
+const editSaving = ref(false)
+const editing = ref<QuestionDetail | null>(null)
+
+const answerOptions = optionLetters.map((l) => ({ label: l, value: l }))
+
+async function openEdit(id: string) {
+  editVisible.value = true
+  editLoading.value = true
+  editSaving.value = false
+  editing.value = null
+  try {
+    const q = await api<QuestionDetail>(`/questions/${id}`)
+    // 保证 4 个选项输入槽
+    while (q.choices.length < 4) q.choices.push('')
+    q.analysis = q.analysis ?? ''
+    editing.value = q
+  } catch (e) {
+    message.error((e as Error).message)
+    editVisible.value = false
+  } finally {
+    editLoading.value = false
+  }
+}
+
+function onEditPointChange(value: string | null) {
+  if (!editing.value) return
+  editing.value.pointId = value ?? ''
+  const opt = pointOptions.find((o) => o.value === value)
+  editing.value.pointTitle = opt?.label ?? null
+}
+
+async function saveEdit() {
+  if (!editing.value || editSaving.value) return
+  if (!editing.value.stem.trim()) {
+    message.warning('题干不能为空')
+    return
+  }
+  if (!editing.value.pointId) {
+    message.warning('请选择考点')
+    return
+  }
+  if (!editing.value.answer) {
+    message.warning('请选择正确答案')
+    return
+  }
+  editSaving.value = true
+  try {
+    await api(`/questions/${editing.value.id}`, {
+      method: 'PUT',
+      body: JSON.stringify({
+        pointId: editing.value.pointId,
+        pointTitle: editing.value.pointTitle ?? '',
+        type: editing.value.type,
+        stem: editing.value.stem,
+        choices: editing.value.choices.filter((c) => c.trim() !== ''),
+        answer: editing.value.answer,
+        analysis: editing.value.analysis ?? '',
+      }),
+    })
+    message.success('已保存')
+    editVisible.value = false
+    fetchQuestions()
+  } catch (e) {
+    message.error((e as Error).message)
+  } finally {
+    editSaving.value = false
+  }
+}
+
+const questionColumns: DataTableColumns<QuestionPreviewRow> = [
+  { title: '考点', key: 'pointTitle', render: (row) => row.pointTitle ?? '-' },
+  {
+    title: '类型',
+    key: 'type',
+    width: 90,
+    render: (row) =>
+      h(
+        NTag,
+        { size: 'small', type: 'info', bordered: false },
+        { default: () => typeLabels[row.type] ?? row.type },
+      ),
+  },
+  { title: '题目', key: 'stemPreview', ellipsis: { tooltip: true } },
+  {
+    title: '操作',
+    key: 'actions',
+    width: 110,
+    render: (row) =>
+      h(
+        NButton,
+        { size: 'small', type: 'primary', ghost: true, onClick: () => openDetail(row.id) },
+        { default: () => '查看详情' },
+      ),
+  },
+]
+
 // —— 系统设置 ——
 const regOpen = ref(true)
 async function fetchRegOpen() {
@@ -216,20 +433,22 @@ async function toggleRegOpen(value: boolean) {
 }
 
 // —— 后台导航（桌面侧边栏 + 移动端顶部标签） ——
-type AdminTab = 'users' | 'settings' | 'feedback'
+type AdminTab = 'users' | 'settings' | 'feedback' | 'questions'
 
 const currentTab = ref<AdminTab>('users')
 
 const menuOptions = [
-  { label: '用户管理', key: 'users' },
   { label: '系统设置', key: 'settings' },
+  { label: '用户管理', key: 'users' },
   { label: '反馈管理', key: 'feedback' },
+  { label: '例题管理', key: 'questions' },
 ]
 
 onMounted(() => {
   fetchUsers()
   fetchFeedback()
   fetchRegOpen()
+  fetchQuestions()
 })
 </script>
 
@@ -250,6 +469,7 @@ onMounted(() => {
           <n-tab name="users" tab="用户管理" />
           <n-tab name="settings" tab="系统设置" />
           <n-tab name="feedback" tab="反馈管理" />
+          <n-tab name="questions" tab="例题管理" />
         </n-tabs>
 
         <!-- 用户管理 -->
@@ -290,8 +510,107 @@ onMounted(() => {
               :row-key="(row) => row.id" />
           </n-card>
         </div>
+
+        <!-- 例题管理 -->
+        <div v-show="currentTab === 'questions'">
+          <n-card>
+            <n-h2>例题管理</n-h2>
+            <div class="toolbar">
+              <n-input v-model:value="questionKeyword" placeholder="搜索题干" clearable style="max-width: 240px"
+                @keyup.enter="handleQuestionSearch" />
+              <n-select v-model:value="questionPointFilter" :options="pointOptions" clearable filterable
+                placeholder="全部考点" style="max-width: 220px"
+                @update:value="() => { questionPage = 1; fetchQuestions() }" />
+              <n-button type="primary" @click="handleQuestionSearch">搜索</n-button>
+            </div>
+            <n-data-table :columns="questionColumns" :data="questionRows" :loading="questionLoading" :bordered="false"
+              :row-key="(row) => row.id" />
+            <n-pagination class="admin-pagination" :page="questionPage" :page-size="questionPageSize"
+              :item-count="questionTotal" @update:page="(p) => { questionPage = p; fetchQuestions() }" />
+          </n-card>
+        </div>
       </div>
     </div>
+
+    <!-- 例题详情弹窗 -->
+    <n-modal v-model:show="detailVisible" preset="card" title="例题详情" style="width: 600px; max-width: 92vw">
+      <template v-if="detailLoading">
+        <div class="detail-loading">
+          <n-spin size="large" />
+        </div>
+      </template>
+      <template v-else-if="detail">
+        <n-descriptions label-placement="left" :column="1" size="small">
+          <n-descriptions-item label="考点">{{ detail.pointTitle ?? '-' }}</n-descriptions-item>
+          <n-descriptions-item label="类型">{{ typeLabels[detail.type] ?? detail.type }}</n-descriptions-item>
+        </n-descriptions>
+        <div class="detail-stem">{{ detail.stem }}</div>
+        <div v-if="detail.choices?.length" class="detail-choices">
+          <div v-for="(c, i) in detail.choices" :key="i" class="detail-choice">
+            <span class="choice-letter">{{ optionLetters[i] }}</span>
+            <span>{{ c }}</span>
+          </div>
+        </div>
+        <div class="detail-answer">
+          <n-tag type="success" size="small" :bordered="false">正确答案：{{ detail.answer }}</n-tag>
+        </div>
+        <div v-if="detail.analysis" class="detail-analysis">
+          <div class="analysis-label">解析</div>
+          <div>{{ detail.analysis }}</div>
+        </div>
+        <div class="detail-actions">
+          <n-popconfirm @positive-click="handleDeleteQuestion" positive-text="删除" negative-text="取消">
+            <template #trigger>
+              <n-button type="error" ghost>删除</n-button>
+            </template>
+            确定删除该题目？删除后不可恢复。
+          </n-popconfirm>
+          <n-button type="primary" @click="editFromDetail">编辑</n-button>
+        </div>
+      </template>
+    </n-modal>
+
+    <!-- 例题编辑弹窗 -->
+    <n-modal v-model:show="editVisible" preset="card" title="编辑例题" style="width: 640px; max-width: 94vw">
+      <template v-if="editLoading">
+        <div class="detail-loading">
+          <n-spin size="large" />
+        </div>
+      </template>
+      <template v-else-if="editing">
+        <n-form label-placement="left" label-width="80" size="small">
+          <n-form-item label="考点">
+            <n-select v-model:value="editing.pointId" :options="pointOptions" filterable clearable placeholder="选择考点"
+              @update:value="onEditPointChange" />
+          </n-form-item>
+          <n-form-item label="类型">
+            <n-tag size="small" type="info" :bordered="false">{{ typeLabels[editing.type] ?? editing.type }}</n-tag>
+          </n-form-item>
+          <n-form-item label="题干">
+            <n-input v-model:value="editing.stem" type="textarea" :rows="2" placeholder="题目内容" />
+          </n-form-item>
+          <n-form-item label="选项">
+            <div class="edit-choices">
+              <div v-for="(_, i) in optionLetters" :key="i" class="edit-choice">
+                <span class="choice-letter">{{ optionLetters[i] }}</span>
+                <n-input v-model:value="editing.choices[i]" placeholder="选项内容" />
+              </div>
+            </div>
+          </n-form-item>
+          <n-form-item label="答案">
+            <n-select v-model:value="editing.answer" :options="answerOptions" placeholder="选择正确答案"
+              style="width: 120px" />
+          </n-form-item>
+          <n-form-item label="解析">
+            <n-input v-model:value="editing.analysis" type="textarea" :rows="3" placeholder="答案解析" />
+          </n-form-item>
+        </n-form>
+        <div class="edit-actions">
+          <n-button @click="editVisible = false">取消</n-button>
+          <n-button type="primary" :loading="editSaving" @click="saveEdit">保存</n-button>
+        </div>
+      </template>
+    </n-modal>
   </div>
 </template>
 
@@ -336,6 +655,84 @@ onMounted(() => {
 .admin-pagination {
   margin-top: 16px;
   justify-content: flex-end;
+}
+
+/* 例题详情弹窗 */
+.detail-loading {
+  display: flex;
+  justify-content: center;
+  padding: 24px 0;
+}
+
+.detail-stem {
+  margin: 12px 0;
+  font-weight: 600;
+  font-size: 0.95rem;
+  line-height: 1.6;
+}
+
+.detail-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.detail-choice {
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+}
+
+.choice-letter {
+  font-weight: 600;
+  color: #18a058;
+  flex-shrink: 0;
+}
+
+.detail-answer {
+  margin: 12px 0;
+}
+
+.detail-analysis {
+  margin-top: 12px;
+  color: var(--n-text-color-3);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.analysis-label {
+  font-weight: 600;
+  margin-bottom: 4px;
+  color: var(--n-text-color-2);
+}
+
+.detail-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* 例题编辑弹窗 */
+.edit-choices {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+}
+
+.edit-choice {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 .setting-row {

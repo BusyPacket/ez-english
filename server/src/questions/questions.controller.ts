@@ -36,6 +36,12 @@ export class QuestionsController {
     )
   }
 
+  /** 按考点返回全部例题（练习页例题库浏览，登录即可，有序） */
+  @Get('by-point')
+  byPoint(@Query('pointId') pointId?: string) {
+    return this.questionsService.list(pointId || undefined)
+  }
+
   /** 更新例题（admin 编辑） */
   @Put(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)

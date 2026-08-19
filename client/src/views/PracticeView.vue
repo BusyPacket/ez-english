@@ -1,10 +1,10 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import { api } from '@/api/http'
 import { useUserStore } from '@/stores/user'
-import MarkdownView from '@/components/MarkdownView.vue'
+import QuestionCard, { type AnswerableQuestion } from '@/components/QuestionCard.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -14,6 +14,9 @@ const userStore = useUserStore()
 /** 练习主题标题（从进度页考点带入） */
 const practiceTitle = computed(() => (route.query.title as string) ?? '英语练习')
 
+/** 当前考点 id */
+const pointId = computed(() => (route.query.point as string) ?? '')
+
 /** 练习题型：single 单选题 / fill 填空题 / judge 判断题 */
 const questionType = ref<'single' | 'fill' | 'judge'>('single')
 const typeOptions = [
@@ -22,25 +25,11 @@ const typeOptions = [
     { label: '判断题', value: 'judge' },
 ]
 
-const optionLetters = ['A', 'B', 'C', 'D']
-
 /** AI 生成状态与结果 */
 const generating = ref(false)
-const generated = ref<GeneratedQuestion | null>(null)
-/** 已生成题目对应的题型（生成时锁定，切换题型控件不影响当前题） */
+const generated = ref<AnswerableQuestion | null>(null)
+/** 已生成题目对应的题型（生成时锁定） */
 const generatedType = ref<'single' | 'fill' | 'judge'>('single')
-
-interface GeneratedQuestion {
-    stem?: string
-    choices?: string[]
-    answer?: string
-    point?: string
-    analysis?: string
-}
-
-onMounted(() => {
-    if (userStore.isLoggedIn) void userStore.refreshAiAvailable()
-})
 
 /** 生成按钮文案：生成中 → 生成中；已生成过 → 再来一题；否则 → 生成题目 */
 const generateBtnText = computed(() => {
@@ -48,23 +37,7 @@ const generateBtnText = computed(() => {
     return generated.value ? '再来一题' : '生成题目'
 })
 
-/** 答题状态 */
-const selectedChoice = ref<number | null>(null)
-const judgeChoice = ref<'正确' | '错误' | null>(null)
-const fillInput = ref('')
-const submitted = ref(false)
-const isCorrect = ref(false)
-
-/** 重置答题状态（生成新题时调用） */
-function resetAnswer() {
-    selectedChoice.value = null
-    judgeChoice.value = null
-    fillInput.value = ''
-    submitted.value = false
-    isCorrect.value = false
-}
-
-/** 生成题目：需 AI 可用；按当前考点与题型调用后端 */
+/** 生成题目：需 AI 可用；按当前考点与题型调用后端（答题/收藏/追问由 QuestionCard 处理） */
 async function generateQuestion() {
     if (generating.value) return
     if (!userStore.aiAvailable) {
@@ -74,19 +47,11 @@ async function generateQuestion() {
     }
     generating.value = true
     try {
-        generated.value = await api<GeneratedQuestion>('/ai/generate-practice', {
+        generated.value = await api<AnswerableQuestion>('/ai/generate-practice', {
             method: 'POST',
-            body: JSON.stringify({ point: route.query.point ?? '', type: questionType.value }),
+            body: JSON.stringify({ point: pointId.value, type: questionType.value }),
         })
         generatedType.value = questionType.value // 锁定当前题目题型
-        resetAnswer()
-        favoriteId.value = null // 新题未收藏
-        // 以新题目为追问上下文的起点
-        followUpMessages.value = [
-            { role: 'assistant', content: '已生成题目：\n' + questionContext(generated.value) },
-        ]
-        followUpList.value = []
-        followUpInput.value = ''
         message.success('已生成题目')
     } catch (e) {
         message.error((e as Error).message)
@@ -95,138 +60,79 @@ async function generateQuestion() {
     }
 }
 
-/** 归一化：去空白、句点、转小写，用于答案比较 */
-function normalize(s?: string): string {
-    return (s ?? '').trim().toLowerCase().replace(/[。．.\s]/g, '')
+// —— 例题库（该考点全部例题，可折叠 + 上一题/下一题浏览） ——
+interface BankQuestion {
+    id: string
+    type: string
+    pointId: string
+    pointTitle: string | null
+    stem: string
+    choices: string[]
+    answer: string
+    analysis: string | null
+    createdAt: string
 }
 
-/** 判断题答案归一化：正确/T/True/对 → right；错误/F/False/错 → wrong */
-function judgeValue(s?: string): string {
-    const v = normalize(s)
-    if (['正确', 't', 'true', '对'].includes(v)) return 'right'
-    if (['错误', 'f', 'false', '错'].includes(v)) return 'wrong'
-    return v
-}
+const bankQuestions = ref<BankQuestion[]>([])
+const bankLoading = ref(false)
+const bankIndex = ref(0)
+const bankExpanded = ref<string[]>(['bank'])
 
-/** 选择题选项是否命中正确答案（用于提交后高亮） */
-function isChoiceCorrect(i: number): boolean {
-    const letter = optionLetters[i]
-    return normalize(letter) === normalize(generated.value?.answer)
-}
+/** AI 生题面板折叠状态 */
+const aiExpanded = ref<string[]>(['ai'])
 
-function pickChoice(i: number) {
-    if (submitted.value) return
-    selectedChoice.value = i
-}
-
-/** 提交答案并判断对错 */
-function submitAnswer() {
-    if (!generated.value || submitted.value) return
-    let correct = false
-    if (generatedType.value === 'single') {
-        if (selectedChoice.value === null) {
-            message.warning('请先选择答案')
-            return
-        }
-        const letter = optionLetters[selectedChoice.value]
-        correct = normalize(letter) === normalize(generated.value.answer)
-    } else if (generatedType.value === 'judge') {
-        if (!judgeChoice.value) {
-            message.warning('请先选择正确或错误')
-            return
-        }
-        correct = judgeValue(judgeChoice.value) === judgeValue(generated.value.answer)
-    } else {
-        if (!fillInput.value.trim()) {
-            message.warning('请输入答案')
-            return
-        }
-        correct = normalize(fillInput.value) === normalize(generated.value.answer)
+/** 当前浏览的例题（映射为可答题结构） */
+const bankCurrent = computed<AnswerableQuestion | null>(() => {
+    const q = bankQuestions.value[bankIndex.value]
+    if (!q) return null
+    return {
+        stem: q.stem,
+        choices: q.choices,
+        answer: q.answer,
+        point: q.pointTitle ?? '',
+        analysis: q.analysis ?? '',
     }
-    isCorrect.value = correct
-    submitted.value = true
-}
+})
 
-/** 收藏状态 */
-const favoriting = ref(false)
-const favoriteId = ref<string | null>(null)
-
-/** 收藏 / 取消收藏当前题目 */
-async function toggleFavorite() {
-    if (!generated.value || favoriting.value) return
-    favoriting.value = true
+/** 拉取当前考点的全部例题 */
+async function fetchBank() {
+    if (!pointId.value) return
+    bankLoading.value = true
     try {
-        if (favoriteId.value) {
-            await api(`/favorites/${favoriteId.value}`, { method: 'DELETE' })
-            favoriteId.value = null
-            message.success('已取消收藏')
-        } else {
-            const res = await api<{ id: string }>('/favorites', {
-                method: 'POST',
-                body: JSON.stringify({
-                    pointId: route.query.point ?? '',
-                    pointTitle: practiceTitle.value,
-                    type: generatedType.value,
-                    stem: generated.value.stem,
-                    choices: generated.value.choices,
-                    answer: generated.value.answer,
-                    analysis: generated.value.analysis,
-                }),
-            })
-            favoriteId.value = res.id
-            message.success('已收藏')
-        }
-    } catch (e) {
-        message.error((e as Error).message)
-    } finally {
-        favoriting.value = false
-    }
-}
-
-/** 追问状态 */
-const followUpInput = ref('')
-const followUpAsking = ref(false)
-const followUpList = ref<{ question: string; reply: string }[]>([])
-const followUpMessages = ref<{ role: 'user' | 'assistant'; content: string }[]>([])
-
-/** 生成题目的可读上下文文本（供追问携带） */
-function questionContext(q: GeneratedQuestion): string {
-    const parts = [`题目：${q.stem}`]
-    if (q.choices?.length) {
-        parts.push(`选项：${q.choices.map((c, i) => `${optionLetters[i]}. ${c}`).join('；')}`)
-    }
-    parts.push(`答案：${q.answer}`)
-    if (q.analysis) parts.push(`解析：${q.analysis}`)
-    return parts.join('\n')
-}
-
-/** 追问：携带此前多轮上下文，回答用户新问题 */
-async function askFollowUp() {
-    const question = followUpInput.value.trim()
-    if (!question || followUpAsking.value || !generated.value) return
-    followUpAsking.value = true
-    try {
-        const res = await api<{ reply: string }>('/ai/follow-up', {
-            method: 'POST',
-            body: JSON.stringify({
-                point: route.query.point ?? '',
-                type: generatedType.value,
-                history: followUpMessages.value,
-                question,
-            }),
-        })
-        followUpMessages.value.push(
-            { role: 'user', content: question },
-            { role: 'assistant', content: res.reply },
+        bankQuestions.value = await api<BankQuestion[]>(
+            `/questions/by-point?pointId=${encodeURIComponent(pointId.value)}`,
         )
-        followUpList.value.push({ question, reply: res.reply })
-        followUpInput.value = ''
+        bankIndex.value = 0
     } catch (e) {
         message.error((e as Error).message)
     } finally {
-        followUpAsking.value = false
+        bankLoading.value = false
     }
 }
+
+function prevBank() {
+    if (bankIndex.value > 0) bankIndex.value -= 1
+}
+
+function nextBank() {
+    if (bankIndex.value < bankQuestions.value.length - 1) bankIndex.value += 1
+}
+
+// 考点变化（如从学习页切换到另一考点）时：重置折叠状态、回到第一题并重新加载例题
+watch(
+    () => route.query.point,
+    () => {
+        bankExpanded.value = ['bank']
+        aiExpanded.value = ['ai']
+        bankIndex.value = 0
+        fetchBank()
+    },
+)
+
+onMounted(() => {
+    if (userStore.isLoggedIn) void userStore.refreshAiAvailable()
+    fetchBank()
+})
 </script>
 
 <template>
@@ -238,92 +144,51 @@ async function askFollowUp() {
             </n-space>
         </n-card>
 
-        <n-card class="type-card" size="small">
-            <n-space align="center" justify="space-between" :size="12">
-                <n-space align="center" :size="12">
-                    <span class="type-label">题型</span>
-                    <n-radio-group v-model:value="questionType">
-                        <n-radio-button v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
-                            {{ opt.label }}
-                        </n-radio-button>
-                    </n-radio-group>
-                </n-space>
-                <n-button type="success" :loading="generating" @click="generateQuestion">{{ generateBtnText
-                    }}</n-button>
-            </n-space>
-        </n-card>
-
-        <n-card v-if="generated" class="generated-card" size="small">
-            <div class="gen-label">✨ 题目</div>
-            <div class="gen-stem">{{ generated.stem }}</div>
-
-            <!-- 单选题：可点击选项 -->
-            <div v-if="generated.choices" class="gen-choices">
-                <div v-for="(choice, i) in generated.choices" :key="i" class="choice" :class="{
-                    selected: selectedChoice === i,
-                    'correct-choice': submitted && isChoiceCorrect(i),
-                    'wrong-choice': submitted && selectedChoice === i && !isChoiceCorrect(i),
-                }" @click="pickChoice(i)">
-                    <span class="opt-letter">{{ optionLetters[i] }}</span>
-                    {{ choice }}
-                    <span v-if="submitted && isChoiceCorrect(i)" class="choice-tag tag-correct">
-                        {{ selectedChoice === i ? '✓ 正确' : '✓ 正确答案' }}
-                    </span>
-                    <span v-else-if="submitted && selectedChoice === i" class="choice-tag tag-wrong">✗ 你的选择</span>
+        <!-- 例题库（可折叠，位于考点最上方，上一题/下一题浏览） -->
+        <n-collapse v-model:expanded-names="bankExpanded" class="bank-collapse">
+            <n-collapse-item name="bank" :title="`📚 例题库${bankQuestions.length ? `（${bankQuestions.length} 题）` : ''}`">
+                <div v-if="bankLoading" class="bank-loading">
+                    <n-spin size="small" />
                 </div>
-            </div>
-
-            <!-- 判断题 -->
-            <div v-else-if="generatedType === 'judge'" class="judge-row">
-                <n-button size="small" :type="judgeChoice === '正确' ? 'primary' : 'default'" :disabled="submitted"
-                    @click="judgeChoice = '正确'">正确</n-button>
-                <n-button size="small" :type="judgeChoice === '错误' ? 'primary' : 'default'" :disabled="submitted"
-                    @click="judgeChoice = '错误'">错误</n-button>
-            </div>
-
-            <!-- 填空题 -->
-            <div v-else class="fill-row">
-                <n-input v-model:value="fillInput" size="small" placeholder="请输入答案" style="max-width: 320px"
-                    :disabled="submitted" @keyup.enter="submitAnswer" />
-            </div>
-
-            <div class="gen-actions">
-                <n-button size="small" :loading="favoriting" :type="favoriteId ? 'warning' : 'default'"
-                    @click="toggleFavorite">
-                    {{ favoriteId ? '★ 已收藏' : '☆ 收藏' }}
-                </n-button>
-                <n-button size="small" type="primary" :disabled="submitted" @click="submitAnswer">提交答案</n-button>
-            </div>
-
-            <!-- 提交后判分结果 -->
-            <div v-if="submitted" class="gen-result" :class="isCorrect ? 'gen-result-ok' : 'gen-result-err'">
-                {{ isCorrect ? '✅ 回答正确' : `❌ 回答错误，正确答案：${generated.answer}` }}
-            </div>
-
-            <template v-if="submitted">
-                <div v-if="generated.answer" class="gen-answer">答案：{{ generated.answer }}</div>
-                <div v-if="generated.point" class="gen-point">考点：{{ generated.point }}</div>
-                <div v-if="generated.analysis" class="gen-analysis">解析：{{ generated.analysis }}</div>
-            </template>
-        </n-card>
-
-        <n-card v-if="generated" class="followup-card" size="small">
-            <div class="followup-label">💬 追问</div>
-            <div v-if="followUpList.length" class="followup-list">
-                <div v-for="(item, i) in followUpList" :key="i" class="followup-item">
-                    <div class="followup-q">问：{{ item.question }}</div>
-                    <div class="followup-a">
-                        <div class="followup-a-label">答：</div>
-                        <MarkdownView :content="item.reply" />
+                <template v-else-if="bankQuestions.length">
+                    <div class="bank-nav">
+                        <n-button size="small" :disabled="bankIndex <= 0" @click="prevBank">上一题</n-button>
+                        <span class="bank-count">{{ bankIndex + 1 }} / {{ bankQuestions.length }}</span>
+                        <n-button size="small" :disabled="bankIndex >= bankQuestions.length - 1" @click="nextBank">下一题
+                        </n-button>
                     </div>
-                </div>
-            </div>
-            <div class="followup-row">
-                <n-input v-model:value="followUpInput" size="small" placeholder="输入问题，追问这道题…" :disabled="followUpAsking"
-                    @keyup.enter="askFollowUp" />
-                <n-button size="small" :loading="followUpAsking" @click="askFollowUp">追问</n-button>
-            </div>
-        </n-card>
+                    <n-divider style="margin: 10px 0" />
+                    <QuestionCard :question="bankCurrent" question-type="single" :point-id="pointId"
+                        :point-title="practiceTitle" />
+                </template>
+                <div v-else class="bank-empty">该考点暂无例题</div>
+            </n-collapse-item>
+        </n-collapse>
+
+        <!-- AI 生题（可折叠） -->
+        <n-collapse v-model:expanded-names="aiExpanded" class="ai-collapse">
+            <n-collapse-item name="ai" title="🤖 AI生题">
+                <n-card class="type-card" size="small">
+                    <n-space align="center" justify="space-between" :size="12">
+                        <n-space align="center" :size="12">
+                            <span class="type-label">题型</span>
+                            <n-radio-group v-model:value="questionType">
+                                <n-radio-button v-for="opt in typeOptions" :key="opt.value" :value="opt.value">
+                                    {{ opt.label }}
+                                </n-radio-button>
+                            </n-radio-group>
+                        </n-space>
+                        <n-button type="success" :loading="generating" @click="generateQuestion">{{ generateBtnText
+                        }}</n-button>
+                    </n-space>
+                </n-card>
+
+                <n-card v-if="generated" class="generated-card" size="small">
+                    <QuestionCard :question="generated" :question-type="generatedType" :point-id="pointId"
+                        :point-title="practiceTitle" />
+                </n-card>
+            </n-collapse-item>
+        </n-collapse>
     </div>
 </template>
 
@@ -495,5 +360,38 @@ async function askFollowUp() {
 .followup-row {
     display: flex;
     gap: 8px;
+}
+
+/* 例题库 */
+.bank-collapse {
+    margin-top: 16px;
+}
+
+.bank-loading {
+    padding: 12px 0;
+    display: flex;
+    justify-content: center;
+}
+
+.bank-nav {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+}
+
+.bank-count {
+    font-weight: 600;
+    color: var(--n-text-color-2);
+}
+
+.bank-empty {
+    color: var(--n-text-color-3);
+    padding: 8px 0;
+}
+
+/* AI 生题面板 */
+.ai-collapse {
+    margin-top: 32px;
 }
 </style>

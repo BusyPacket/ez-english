@@ -2,13 +2,20 @@ import { ForbiddenException, Injectable, InternalServerErrorException } from '@n
 import { DeepSeekClient, type ChatMessage } from './deepseek'
 import { ProfileService } from '../users/profile.service'
 import { UserService } from '../users/user.service'
-import { GENERATE_QUESTION_SYSTEM_PROMPT, generatePracticeSystemPrompt } from './prompts'
+import {
+  GENERATE_QUESTION_SYSTEM_PROMPT,
+  GENERATE_WRITING_SYSTEM_PROMPT,
+  generatePracticeSystemPrompt,
+  REVIEW_WRITING_SYSTEM_PROMPT,
+} from './prompts'
 import {
   generatedQuestionSchema,
   type GenerateFollowUpDto,
   type GeneratePracticeDto,
   type GenerateQuestionDto,
+  type GenerateWritingDto,
   type GeneratedQuestion,
+  type ReviewWritingDto,
 } from './ai.schema'
 
 /** 生成前余额检查阈值（元）：余额低于此值阻止生成 */
@@ -82,6 +89,42 @@ export class AiService {
       { role: 'user', content: dto.question },
     ]
     const reply = await this.deepseek.chat(apiKey, model, messages, { jsonMode: false })
+    return { reply }
+  }
+
+  /** 生成一道专升本作文题（写作练习页） */
+  async generateWriting(
+    userId: string,
+    dto: GenerateWritingDto,
+  ): Promise<{ stem: string; analysis: string | null }> {
+    await this.assertTrialAvailable(userId)
+    const { apiKey, model } = await this.profileService.getChatConfig(userId)
+    await this.profileService.assertSufficientBalance(userId, MIN_BALANCE)
+
+    const raw = await this.deepseek.chat(apiKey, model, [
+      { role: 'system', content: GENERATE_WRITING_SYSTEM_PROMPT },
+      { role: 'user', content: `写作考点：${dto.point}` },
+    ])
+    const parsed = this.parseJson(raw) as { stem?: string; analysis?: string }
+    return { stem: parsed.stem ?? '', analysis: parsed.analysis ?? null }
+  }
+
+  /** 点评英语作文（写作练习页） */
+  async reviewWriting(userId: string, dto: ReviewWritingDto): Promise<{ reply: string }> {
+    await this.assertTrialAvailable(userId)
+    const { apiKey, model } = await this.profileService.getChatConfig(userId)
+    await this.profileService.assertSufficientBalance(userId, MIN_BALANCE)
+
+    const userContent = `作文题目：${dto.topic ?? '未提供'}\n\n学生作文：\n${dto.essay}`
+    const reply = await this.deepseek.chat(
+      apiKey,
+      model,
+      [
+        { role: 'system', content: REVIEW_WRITING_SYSTEM_PROMPT },
+        { role: 'user', content: userContent },
+      ],
+      { jsonMode: false },
+    )
     return { reply }
   }
 

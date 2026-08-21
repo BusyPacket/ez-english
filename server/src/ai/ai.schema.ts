@@ -55,3 +55,16 @@ export const generatedQuestionSchema = z.object({
 })
 
 export type GeneratedQuestion = z.infer<typeof generatedQuestionSchema>
+
+/** 生成作文题请求体（写作练习页） */
+export const generateWritingSchema = z.object({
+  point: z.string().min(1, '写作考点不能为空'),
+})
+export type GenerateWritingDto = z.infer<typeof generateWritingSchema>
+
+/** 作文点评请求体（写作练习页） */
+export const reviewWritingSchema = z.object({
+  essay: z.string().min(1, '作文不能为空'),
+  topic: z.string().optional(),
+})
+export type ReviewWritingDto = z.infer<typeof reviewWritingSchema>

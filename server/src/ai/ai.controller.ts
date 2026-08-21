@@ -5,9 +5,13 @@ import {
   generateFollowUpSchema,
   generatePracticeSchema,
   generateQuestionSchema,
+  generateWritingSchema,
+  reviewWritingSchema,
   type GenerateFollowUpDto,
   type GeneratePracticeDto,
   type GenerateQuestionDto,
+  type GenerateWritingDto,
+  type ReviewWritingDto,
 } from './ai.schema'
 import { AiService } from './ai.service'
 
@@ -41,5 +45,23 @@ export class AiController {
     @Body(new ZodValidationPipe(generateFollowUpSchema)) dto: GenerateFollowUpDto,
   ) {
     return this.aiService.generateFollowUp(request.user.sub, dto)
+  }
+
+  /** 生成专升本作文题（写作练习页，登录用户可用） */
+  @Post('generate-writing')
+  generateWriting(
+    @Req() request: { user: { sub: string } },
+    @Body(new ZodValidationPipe(generateWritingSchema)) dto: GenerateWritingDto,
+  ) {
+    return this.aiService.generateWriting(request.user.sub, dto)
+  }
+
+  /** 点评英语作文（写作练习页，登录用户可用） */
+  @Post('review-writing')
+  reviewWriting(
+    @Req() request: { user: { sub: string } },
+    @Body(new ZodValidationPipe(reviewWritingSchema)) dto: ReviewWritingDto,
+  ) {
+    return this.aiService.reviewWriting(request.user.sub, dto)
   }
 }

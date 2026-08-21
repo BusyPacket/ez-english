@@ -6,6 +6,7 @@ import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ProfileView from '@/views/ProfileView.vue'
 import TrialExpiredView from '@/views/TrialExpiredView.vue'
+import WritingView from '@/views/WritingView.vue'
 import AdminView from '@/views/AdminView.vue'
 import FeedbackView from '@/views/FeedbackView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
@@ -31,6 +32,11 @@ const router = createRouter({
       path: '/practice',
       name: 'practice',
       component: PracticeView,
+    },
+    {
+      path: '/writing',
+      name: 'writing',
+      component: WritingView,
     },
     {
       path: '/favorites',

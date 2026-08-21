@@ -227,6 +227,17 @@ export const knowledgeSections: KnowledgeSection[] = [
       },
     ],
   },
+  {
+    id: 'writing',
+    title: '写作',
+    points: [
+      { id: 'writing-essay-structure', title: '作文结构（开头/正文/结尾）' },
+      { id: 'writing-paragraph', title: '段落展开与主题句' },
+      { id: 'writing-connective', title: '衔接词与过渡句' },
+      { id: 'writing-sentence-variety', title: '句式多样性与高级表达' },
+      { id: 'writing-essay', title: '短文写作（完整作文）' },
+    ],
+  },
 ]
 
 /** 统计叶子考点数（有 children 的分组不计入） */

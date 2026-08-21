@@ -18,6 +18,17 @@ export class SettingsService {
     return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 7
   }
 
+  /** 免费试用天数配置（管理接口返回对象） */
+  async getTrialDaysConfig(): Promise<{ days: number }> {
+    return { days: await this.getTrialDays() }
+  }
+
+  /** 设置免费试用天数（管理员） */
+  async setTrialDays(days: number) {
+    await this.set('trial_days', String(days))
+    return { days }
+  }
+
   /** 设置注册开关 */
   async setRegistrationOpen(open: boolean) {
     await this.set('registration_open', String(open))

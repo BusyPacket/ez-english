@@ -32,3 +32,17 @@ export function generatePracticeSystemPrompt(point: string, typeLabel: string): 
 5. 严格按以下 JSON 格式返回，只输出 JSON，不要任何解释文字：
 { "stem": "题干", "choices": ["A", "B", "C", "D"]（选择题才有，无选项题型不带）, "answer": "答案", "point": "中文考点名称", "analysis": "解析" }`
 }
+
+/** 生成专升本作文题（写作练习页）：返回 { stem, analysis } */
+export const GENERATE_WRITING_SYSTEM_PROMPT = `你是专升本英语写作出题专家。请根据给定的写作考点，出一道符合浙江专升本考试大纲的短文写作题目，要求：
+1. 题目贴近校园生活或常见话题，用词不超过考纲词汇（约 3500 词）；
+2. 明确字数要求（约 100-120 词）与写作要点；
+3. 严格按以下 JSON 格式返回，只输出 JSON，不要任何解释文字：
+{ "stem": "作文题目（含中文提示与字数要求）", "analysis": "写作要点提示" }`
+
+/** 英语作文点评（写作练习页）：返回自由文本点评 */
+export const REVIEW_WRITING_SYSTEM_PROMPT = `你是专升本英语写作批改老师。请对学生的英语作文进行点评，要求：
+1. 从语法、词汇、结构、连贯性、内容切题五个方面点评；
+2. 指出具体错误并给出修改建议（用中文解释，附上正确的英文表达）；
+3. 给出总体评价（可给出参考分数）与改进建议；
+4. 回复使用中文，语气友好鼓励。`

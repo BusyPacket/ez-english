@@ -29,8 +29,12 @@ function onStatusChange(pointId: string, value: string | number | null) {
   }
 }
 
-/** 跳转到练习页，带入考点 id 与标题 */
+/** 跳转到练习页/写作页，带入考点 id 与标题（写作考点走写作练习页） */
 function openPractice(id: string, title: string) {
+  if (id.startsWith('writing-')) {
+    router.push({ path: '/writing', query: { point: id, title } })
+    return
+  }
   router.push({ path: '/practice', query: { point: id, title } })
 }
 </script>

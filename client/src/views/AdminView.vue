@@ -538,6 +538,28 @@ async function toggleRegOpen(value: boolean) {
   }
 }
 
+// 免费试用天数（普通用户注册后可免费使用 AI 的天数）
+const trialDays = ref(7)
+async function fetchTrialDays() {
+  try {
+    const res = await api<{ days: number }>('/settings/trial-days')
+    trialDays.value = res.days
+  } catch {
+    // 读取失败保持默认
+  }
+}
+async function saveTrialDays() {
+  try {
+    await api('/settings/trial-days', {
+      method: 'PUT',
+      body: JSON.stringify({ days: trialDays.value }),
+    })
+    message.success('免费试用天数已更新')
+  } catch (e) {
+    message.error((e as Error).message)
+  }
+}
+
 // —— 后台导航（桌面侧边栏 + 移动端顶部标签） ——
 type AdminTab = 'users' | 'settings' | 'feedback' | 'questions'
 
@@ -554,6 +576,7 @@ onMounted(() => {
   fetchUsers()
   fetchFeedback()
   fetchRegOpen()
+  fetchTrialDays()
   fetchQuestions()
 })
 </script>
@@ -628,6 +651,20 @@ onMounted(() => {
               <n-tag size="small" :type="regOpen ? 'success' : 'warning'" :bordered="false">
                 {{ regOpen ? '开放中' : '已关闭' }}
               </n-tag>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label">免费试用天数</span>
+              <n-input-number v-model:value="trialDays" :min="1" :max="365" style="width: 120px" />
+              <n-tooltip
+                trigger="hover"
+                :style="{ maxWidth: '240px', whiteSpace: 'normal', lineHeight: '1.6' }"
+              >
+                <template #trigger>
+                  <span class="tip-badge" aria-label="免费试用天数说明">?</span>
+                </template>
+                普通用户注册后可免费使用 AI 的天数。
+              </n-tooltip>
+              <n-button size="small" type="primary" @click="saveTrialDays">保存</n-button>
             </div>
           </n-card>
         </div>
@@ -967,8 +1004,38 @@ onMounted(() => {
   gap: 12px;
 }
 
+/* 相邻设置行之间留出上间距 */
+.setting-row + .setting-row {
+  margin-top: 14px;
+}
+
 .setting-label {
   font-weight: 500;
+}
+
+/* 问号提示（颜色跟随文字） */
+.tip-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  color: inherit;
+  background: transparent;
+  cursor: help;
+  vertical-align: 1px;
+  transition:
+    color 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.tip-badge:hover {
+  color: var(--n-primary-color);
 }
 
 /* 移动端（<768px）：侧边栏收起，改用顶部标签导航 */

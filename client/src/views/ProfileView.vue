@@ -351,10 +351,20 @@ onMounted(() => {
           <a :href="platformUrl" target="_blank" rel="noopener">{{ platformName }}</a>
           创建你的 API Key 并充值（必须以 <code>sk-</code> 开头），强烈建议新建专用的 key！
         </div>
+        <div class="ai-tip">
+          💰 计费标准：
+          <a
+            href="https://api-docs.deepseek.com/zh-cn/quick_start/pricing"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            DeepSeek 模型 &amp; 价格
+          </a>
+        </div>
         <div class="ai-note">
           <strong>❓ 为什么需要额外配置 AI 并充值？</strong>
           <p>
-            在官方 APP 或网页内使用 AI 通常并不需要付费，但是使用 API
+            在 AI 公司官方 APP 或网页内使用 AI 通常并不需要付费，但是使用 API
             调用是需要付费的。本网站并不会替你向 AI 公司付费，为了达成某些功能，我们必须使用 API
             调用的方式。你充值的所有金额都是直接转到 AI 公司账户，本网站不会从中获利。
           </p>

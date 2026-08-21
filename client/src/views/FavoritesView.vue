@@ -102,49 +102,37 @@ onMounted(fetchList)
       <aside class="fav-sidebar">
         <div class="fav-sidebar-title">📚 按考点</div>
         <div class="fav-sidebar-btns">
-          <button
-            class="fav-filter-btn"
-            :class="{ active: activePoint === '' }"
-            @click="onPointSelect('')"
-          >
+          <button class="fav-filter-btn" :class="{ active: activePoint === '' }" @click="onPointSelect('')">
             全部（{{ list.length }}）
           </button>
-          <button
-            v-for="g in pointGroups"
-            :key="g.title"
-            class="fav-filter-btn"
-            :class="{ active: activePoint === g.title }"
-            @click="onPointSelect(g.title)"
-          >
+          <button v-for="g in pointGroups" :key="g.title" class="fav-filter-btn"
+            :class="{ active: activePoint === g.title }" @click="onPointSelect(g.title)">
             {{ g.title }}（{{ g.count }}）
           </button>
         </div>
       </aside>
       <div class="fav-main">
         <n-spin :show="loading">
-          <n-empty
-            v-if="!loading && !filteredList.length"
-            description="该分类下暂无收藏"
-            class="fav-empty"
-          />
+          <n-empty v-if="!loading && !filteredList.length" description="该分类下暂无收藏" class="fav-empty" />
           <n-card v-for="f in pagedList" :key="f.id" class="fav-card" size="small">
             <div class="fav-meta">
               <n-tag size="small" type="success" :bordered="false">{{
                 typeLabels[f.type] ?? f.type
-              }}</n-tag>
+                }}</n-tag>
               <n-tag v-if="f.pointTitle" size="small" type="info" :bordered="false">{{
                 f.pointTitle
-              }}</n-tag>
+                }}</n-tag>
               <span class="fav-time">{{ dayjs(f.createdAt).format('YYYY-MM-DD') }}</span>
             </div>
             <div class="fav-stem" @click="toggleExpand(f.id)">{{ f.stem }}</div>
+            <!-- 选项属于题面，始终展示（不被“查看答案”折叠隐藏） -->
+            <ul v-if="f.choices?.length" class="fav-choices">
+              <li v-for="(c, i) in f.choices" :key="i">
+                <span class="opt-letter">{{ optionLetters[i] }}</span>
+                {{ c }}
+              </li>
+            </ul>
             <template v-if="expanded[f.id]">
-              <ul v-if="f.choices" class="fav-choices">
-                <li v-for="(c, i) in f.choices" :key="i">
-                  <span class="opt-letter">{{ optionLetters[i] }}</span>
-                  {{ c }}
-                </li>
-              </ul>
               <div class="fav-answer">答案：{{ f.answer }}</div>
               <div v-if="f.analysis" class="fav-analysis">解析：{{ f.analysis }}</div>
             </template>
@@ -152,11 +140,7 @@ onMounted(fetchList)
               <n-button size="tiny" secondary @click="toggleExpand(f.id)">
                 {{ expanded[f.id] ? '收起' : '查看答案' }}
               </n-button>
-              <n-popconfirm
-                @positive-click="removeFavorite(f.id)"
-                positive-text="确定"
-                negative-text="取消"
-              >
+              <n-popconfirm @positive-click="removeFavorite(f.id)" positive-text="确定" negative-text="取消">
                 <template #trigger>
                   <n-button size="tiny" type="error" secondary>取消收藏</n-button>
                 </template>
@@ -164,14 +148,8 @@ onMounted(fetchList)
               </n-popconfirm>
             </div>
           </n-card>
-          <n-pagination
-            v-if="filteredList.length > pageSize"
-            class="fav-pagination"
-            :page="page"
-            :page-size="pageSize"
-            :item-count="filteredList.length"
-            @update:page="(p) => (page = p)"
-          />
+          <n-pagination v-if="filteredList.length > pageSize" class="fav-pagination" :page="page" :page-size="pageSize"
+            :item-count="filteredList.length" @update:page="(p) => (page = p)" />
         </n-spin>
       </div>
     </div>

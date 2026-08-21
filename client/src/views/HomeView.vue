@@ -206,7 +206,10 @@ onBeforeUnmount(() => {
             学一道题花一道题的钱，学 100 道题花 100 道题的钱——使用 AI 动态实时计费，不花冤枉钱。
             传统报班不管学没学都要先交钱，这里每一分钱都花在实际学习上。目前国产 AI 例如 DeepSeek
             比较便宜，还采用类似电费的峰谷计费
-            <n-tooltip trigger="hover" :style="{ maxWidth: '280px', whiteSpace: 'normal', lineHeight: '1.6' }">
+            <n-tooltip
+              trigger="hover"
+              :style="{ maxWidth: '280px', whiteSpace: 'normal', lineHeight: '1.6' }"
+            >
               <template #trigger>
                 <span class="tip-badge" aria-label="峰谷计费说明">?</span>
               </template>
@@ -238,11 +241,17 @@ onBeforeUnmount(() => {
 
     <footer class="home-footer">
       作者：
-      <a class="author-link" href="https://github.com/BusyPacket" target="_blank" rel="noopener noreferrer">
+      <a
+        class="author-link"
+        href="https://github.com/BusyPacket"
+        target="_blank"
+        rel="noopener noreferrer"
+      >
         <span class="author-icon" aria-hidden="true">
           <svg viewBox="0 0 16 16" width="16" height="16" fill="currentColor">
             <path
-              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z" />
+              d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"
+            />
           </svg>
         </span>
         BusyPacket
@@ -365,7 +374,6 @@ onBeforeUnmount(() => {
 }
 
 @keyframes glow-pulse {
-
   0%,
   100% {
     opacity: 0.6;
@@ -379,20 +387,20 @@ onBeforeUnmount(() => {
 }
 
 /* —— 入场动画（依次浮现） —— */
-.home-hero>* {
+.home-hero > * {
   opacity: 0;
   animation: fade-in-up 0.8s ease forwards;
 }
 
-.home-hero> :nth-child(1) {
+.home-hero > :nth-child(1) {
   animation-delay: 0.1s;
 }
 
-.home-hero> :nth-child(2) {
+.home-hero > :nth-child(2) {
   animation-delay: 0.35s;
 }
 
-.home-hero> :nth-child(3) {
+.home-hero > :nth-child(3) {
   animation-delay: 0.6s;
 }
 
@@ -477,7 +485,6 @@ onBeforeUnmount(() => {
 }
 
 @keyframes floaty {
-
   0%,
   100% {
     transform: translateY(0) rotate(-6deg);
@@ -627,18 +634,17 @@ onBeforeUnmount(() => {
 
 /* 尊重系统减弱动效偏好 */
 @media (prefers-reduced-motion: reduce) {
-
   .gradient-title,
   .hero-glow,
   .float-letter,
-  .home-hero>*,
+  .home-hero > *,
   .advantages-title,
   .adv-card,
   .home-footer {
     animation: none !important;
   }
 
-  .home-hero>*,
+  .home-hero > *,
   .advantages-title,
   .adv-card,
   .home-footer {

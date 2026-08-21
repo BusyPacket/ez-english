@@ -308,25 +308,64 @@ async function handleDeleteQuestion() {
   }
 }
 
-// 编辑弹窗
+// 编辑弹窗（新增/编辑共用：creating 区分 POST 与 PUT）
 const editVisible = ref(false)
 const editLoading = ref(false)
 const editSaving = ref(false)
+const creating = ref(false)
 const editing = ref<QuestionDetail | null>(null)
 
 const answerOptions = optionLetters.map((l) => ({ label: l, value: l }))
 
+const typeOptions = [
+  { label: '单选题', value: 'single' },
+  { label: '填空题', value: 'fill' },
+  { label: '判断题', value: 'judge' },
+]
+
+const judgeOptions = [
+  { label: '正确', value: '正确' },
+  { label: '错误', value: '错误' },
+]
+
+/** 按题型补齐选项槽：仅单选题需要 4 个输入槽 */
+function ensureChoiceSlots(q: QuestionDetail) {
+  if (q.type === 'single') {
+    while (q.choices.length < 4) q.choices.push('')
+  } else {
+    q.choices = []
+  }
+  return q
+}
+
+/** 新增例题：打开空表单（保存时 POST） */
+function openCreate() {
+  creating.value = true
+  editVisible.value = true
+  editLoading.value = false
+  editSaving.value = false
+  editing.value = ensureChoiceSlots({
+    id: '',
+    type: 'single',
+    pointId: '',
+    pointTitle: null,
+    stem: '',
+    choices: [],
+    answer: '',
+    analysis: '',
+  })
+}
+
 async function openEdit(id: string) {
+  creating.value = false
   editVisible.value = true
   editLoading.value = true
   editSaving.value = false
   editing.value = null
   try {
     const q = await api<QuestionDetail>(`/questions/${id}`)
-    // 保证 4 个选项输入槽
-    while (q.choices.length < 4) q.choices.push('')
     q.analysis = q.analysis ?? ''
-    editing.value = q
+    editing.value = ensureChoiceSlots(q)
   } catch (e) {
     message.error((e as Error).message)
     editVisible.value = false
@@ -342,6 +381,13 @@ function onEditPointChange(value: string | null) {
   editing.value.pointTitle = opt?.label ?? null
 }
 
+/** 切换题型时重置选项槽与答案（不同题型的选项/答案语义不同） */
+function onTypeChange() {
+  if (!editing.value) return
+  editing.value = ensureChoiceSlots(editing.value)
+  editing.value.answer = ''
+}
+
 async function saveEdit() {
   if (!editing.value || editSaving.value) return
   if (!editing.value.stem.trim()) {
@@ -352,25 +398,47 @@ async function saveEdit() {
     message.warning('请选择考点')
     return
   }
-  if (!editing.value.answer) {
-    message.warning('请选择正确答案')
-    return
+  const type = editing.value.type
+  let choices: string[] | undefined
+  if (type === 'single') {
+    const validChoices = editing.value.choices.filter((c) => c.trim() !== '')
+    if (validChoices.length < 2) {
+      message.warning('至少填写两个选项')
+      return
+    }
+    if (!editing.value.answer) {
+      message.warning('请选择正确答案')
+      return
+    }
+    choices = validChoices
+  } else {
+    if (!editing.value.answer.trim()) {
+      message.warning(type === 'fill' ? '请填写正确答案' : '请选择正确或错误')
+      return
+    }
+    choices = []
   }
   editSaving.value = true
   try {
-    await api(`/questions/${editing.value.id}`, {
-      method: 'PUT',
-      body: JSON.stringify({
-        pointId: editing.value.pointId,
-        pointTitle: editing.value.pointTitle ?? '',
-        type: editing.value.type,
-        stem: editing.value.stem,
-        choices: editing.value.choices.filter((c) => c.trim() !== ''),
-        answer: editing.value.answer,
-        analysis: editing.value.analysis ?? '',
-      }),
-    })
-    message.success('已保存')
+    const payload = {
+      pointId: editing.value.pointId,
+      pointTitle: editing.value.pointTitle ?? '',
+      type,
+      stem: editing.value.stem,
+      choices,
+      answer: editing.value.answer,
+      analysis: editing.value.analysis ?? '',
+    }
+    if (creating.value) {
+      await api('/questions', { method: 'POST', body: JSON.stringify(payload) })
+      message.success('已新增')
+    } else {
+      await api(`/questions/${editing.value.id}`, {
+        method: 'PUT',
+        body: JSON.stringify(payload),
+      })
+      message.success('已保存')
+    }
     editVisible.value = false
     fetchQuestions()
   } catch (e) {
@@ -565,6 +633,7 @@ onMounted(() => {
                 "
               />
               <n-button type="primary" @click="handleQuestionSearch">搜索</n-button>
+              <n-button type="primary" @click="openCreate">新增例题</n-button>
             </div>
             <n-data-table
               :columns="questionColumns"
@@ -643,7 +712,7 @@ onMounted(() => {
     <n-modal
       v-model:show="editVisible"
       preset="card"
-      title="编辑例题"
+      :title="creating ? '新增例题' : '编辑例题'"
       style="width: 640px; max-width: 94vw"
     >
       <template v-if="editLoading">
@@ -664,9 +733,12 @@ onMounted(() => {
             />
           </n-form-item>
           <n-form-item label="类型">
-            <n-tag size="small" type="info" :bordered="false">{{
-              typeLabels[editing.type] ?? editing.type
-            }}</n-tag>
+            <n-select
+              v-model:value="editing.type"
+              :options="typeOptions"
+              style="width: 140px"
+              @update:value="onTypeChange"
+            />
           </n-form-item>
           <n-form-item label="题干">
             <n-input
@@ -676,7 +748,7 @@ onMounted(() => {
               placeholder="题目内容"
             />
           </n-form-item>
-          <n-form-item label="选项">
+          <n-form-item v-if="editing.type === 'single'" label="选项">
             <div class="edit-choices">
               <div v-for="(_, i) in optionLetters" :key="i" class="edit-choice">
                 <span class="choice-letter">{{ optionLetters[i] }}</span>
@@ -685,12 +757,29 @@ onMounted(() => {
             </div>
           </n-form-item>
           <n-form-item label="答案">
-            <n-select
-              v-model:value="editing.answer"
-              :options="answerOptions"
-              placeholder="选择正确答案"
-              style="width: 120px"
-            />
+            <template v-if="editing.type === 'single'">
+              <n-select
+                v-model:value="editing.answer"
+                :options="answerOptions"
+                placeholder="选择正确答案"
+                style="width: 120px"
+              />
+            </template>
+            <template v-else-if="editing.type === 'judge'">
+              <n-select
+                v-model:value="editing.answer"
+                :options="judgeOptions"
+                placeholder="选择正确或错误"
+                style="width: 120px"
+              />
+            </template>
+            <template v-else>
+              <n-input
+                v-model:value="editing.answer"
+                placeholder="填写正确答案"
+                style="max-width: 280px"
+              />
+            </template>
           </n-form-item>
           <n-form-item label="解析">
             <n-input
@@ -703,7 +792,9 @@ onMounted(() => {
         </n-form>
         <div class="edit-actions">
           <n-button @click="editVisible = false">取消</n-button>
-          <n-button type="primary" :loading="editSaving" @click="saveEdit">保存</n-button>
+          <n-button type="primary" :loading="editSaving" @click="saveEdit">
+            {{ creating ? '新增' : '保存' }}
+          </n-button>
         </div>
       </template>
     </n-modal>

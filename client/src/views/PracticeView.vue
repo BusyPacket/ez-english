@@ -94,6 +94,12 @@ const bankCurrent = computed<AnswerableQuestion | null>(() => {
   }
 })
 
+/** 当前浏览例题的题型（single/fill/judge，控制 QuestionCard 渲染方式） */
+const bankType = computed<'single' | 'fill' | 'judge'>(() => {
+  const type = bankQuestions.value[bankIndex.value]?.type
+  return type === 'fill' || type === 'judge' ? type : 'single'
+})
+
 /** 拉取当前考点的全部例题 */
 async function fetchBank() {
   if (!pointId.value) return
@@ -167,7 +173,7 @@ onMounted(() => {
           <n-divider style="margin: 10px 0" />
           <QuestionCard
             :question="bankCurrent"
-            question-type="single"
+            :question-type="bankType"
             :point-id="pointId"
             :point-title="practiceTitle"
           />

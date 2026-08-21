@@ -1,10 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Put, Query, UseGuards } from '@nestjs/common'
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
 import { JwtAuthGuard } from '../common/jwt-auth.guard'
 import { RolesGuard } from '../common/roles.guard'
 import { Roles } from '../common/roles.decorator'
 import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import { UserRole } from '../users/user.schema'
-import { updateQuestionSchema, type UpdateQuestionDto } from './questions.schema'
+import {
+  createQuestionSchema,
+  updateQuestionSchema,
+  type CreateQuestionDto,
+  type UpdateQuestionDto,
+} from './questions.schema'
 import { QuestionsService } from './questions.service'
 
 @Controller('questions')
@@ -40,6 +45,14 @@ export class QuestionsController {
   @Get('by-point')
   byPoint(@Query('pointId') pointId?: string) {
     return this.questionsService.list(pointId || undefined)
+  }
+
+  /** 新增例题（admin 添加） */
+  @Post()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.Admin)
+  create(@Body(new ZodValidationPipe(createQuestionSchema)) dto: CreateQuestionDto) {
+    return this.questionsService.create(dto)
   }
 
   /** 更新例题（admin 编辑） */

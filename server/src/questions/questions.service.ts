@@ -1,8 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
+import { randomUUID } from 'node:crypto'
 import { and, desc, eq, like, or, sql, type SQL } from 'drizzle-orm'
 import { db, schema } from '../database/database'
 import type { Question } from '../database/schema'
-import type { UpdateQuestionDto } from './questions.schema'
+import type { CreateQuestionDto, UpdateQuestionDto } from './questions.schema'
 
 /** 数据库行 → API 响应（choices 反序列化为数组） */
 function mapRow(row: Question) {
@@ -99,6 +100,23 @@ export class QuestionsService {
     }
   }
 
+  /** 新增例题（admin 添加） */
+  async create(dto: CreateQuestionDto) {
+    const row = {
+      id: randomUUID(),
+      pointId: dto.pointId,
+      pointTitle: dto.pointTitle?.trim() ? dto.pointTitle : null,
+      type: dto.type,
+      stem: dto.stem,
+      choices: dto.choices?.length ? JSON.stringify(dto.choices) : '[]',
+      answer: dto.answer,
+      analysis: dto.analysis?.trim() ? dto.analysis : null,
+      createdAt: new Date().toISOString(),
+    }
+    await db.insert(schema.questions).values(row).run()
+    return this.findOne(row.id)
+  }
+
   /** 更新例题（admin 编辑） */
   async update(id: string, dto: UpdateQuestionDto) {
     const existing = await db
@@ -115,8 +133,8 @@ export class QuestionsService {
         pointId: dto.pointId,
         pointTitle: dto.pointTitle,
         type: dto.type,
-        stem: dto.stem,
-        choices: dto.choices?.length ? JSON.stringify(dto.choices) : existing.choices,
+        // 仅单选题存选项；填空/判断题一律清空为 []（避免切换题型后残留旧选项）
+        choices: dto.type === 'single' && dto.choices?.length ? JSON.stringify(dto.choices) : '[]',
         answer: dto.answer,
         analysis: dto.analysis?.trim() ? dto.analysis : null,
       })

@@ -196,8 +196,8 @@ watch(
   <div v-if="question" class="question-card">
     <div class="gen-stem">{{ question.stem }}</div>
 
-    <!-- 单选题：可点击选项 -->
-    <div v-if="question.choices" class="gen-choices">
+    <!-- 单选题：可点击选项（用 .length 判断，避免空数组 [] 误入此分支） -->
+    <div v-if="question.choices?.length" class="gen-choices">
       <div
         v-for="(choice, i) in question.choices"
         :key="i"

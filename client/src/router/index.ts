@@ -5,6 +5,7 @@ import ExamPaperView from '@/views/ExamPaperView.vue'
 import LoginView from '@/views/LoginView.vue'
 import RegisterView from '@/views/RegisterView.vue'
 import ProfileView from '@/views/ProfileView.vue'
+import TrialExpiredView from '@/views/TrialExpiredView.vue'
 import AdminView from '@/views/AdminView.vue'
 import FeedbackView from '@/views/FeedbackView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
@@ -59,6 +60,12 @@ const router = createRouter({
       component: ProfileView,
     },
     {
+      path: '/trial-expired',
+      name: 'trial-expired',
+      component: TrialExpiredView,
+      meta: { public: true },
+    },
+    {
       path: '/feedback',
       name: 'feedback',
       component: FeedbackView,
@@ -82,7 +89,7 @@ const router = createRouter({
   ],
 })
 
-// 路由守卫：除首页、登录/注册外均需登录；admin 页面仅管理员可进
+// 路由守卫：除首页、登录/注册外均需登录；admin 页面仅管理员可进；普通用户试用期已到则跳转提示页
 router.beforeEach((to) => {
   if (to.meta.public) return
   const userStore = useUserStore()

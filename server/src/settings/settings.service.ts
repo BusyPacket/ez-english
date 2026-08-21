@@ -11,6 +11,13 @@ export class SettingsService {
     return { open: value !== 'false' }
   }
 
+  /** 免费试用天数（settings 表 trial_days 配置，未设置时默认 7，可修改） */
+  async getTrialDays(): Promise<number> {
+    const value = await this.get('trial_days')
+    const n = value ? Number(value) : NaN
+    return Number.isFinite(n) && n >= 1 ? Math.floor(n) : 7
+  }
+
   /** 设置注册开关 */
   async setRegistrationOpen(open: boolean) {
     await this.set('registration_open', String(open))

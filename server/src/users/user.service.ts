@@ -71,6 +71,23 @@ export class UserService {
     return { id, role: UserRole.Member }
   }
 
+  /** 普通用户试用期是否已到期（会员/管理员豁免） */
+  async isTrialExpired(userId: string): Promise<boolean> {
+    const user = await db
+      .select({
+        role: schema.users.role,
+        createdAt: schema.users.createdAt,
+      })
+      .from(schema.users)
+      .where(eq(schema.users.id, userId))
+      .get()
+    if (!user) return false
+    if (user.role === UserRole.Member || user.role === UserRole.Admin) return false
+    const trialDays = await this.settingsService.getTrialDays()
+    const trialEnd = new Date(user.createdAt).getTime() + trialDays * 24 * 60 * 60 * 1000
+    return Date.now() > trialEnd
+  }
+
   /** 答题数 +1（每次提交一道题目），返回最新答题数 */
   async incrementAnswerCount(id: string) {
     const updated = await db
@@ -85,7 +102,7 @@ export class UserService {
     return updated.answerCount
   }
 
-  /** 获取当前用户资料（不含密码，含答题数） */
+  /** 获取当前用户资料（不含密码，含答题数与免费试用期信息） */
   async getProfile(id: string) {
     const user = await db
       .select({
@@ -102,7 +119,17 @@ export class UserService {
     if (!user) {
       throw new NotFoundException('用户不存在')
     }
-    return user
+    // 免费试用期：普通用户从注册时间起试用 trialDays 天；会员/管理员不受限制
+    const trialDays = await this.settingsService.getTrialDays()
+    const exempt = user.role === UserRole.Member || user.role === UserRole.Admin
+    const remaining =
+      new Date(user.createdAt).getTime() + trialDays * 24 * 60 * 60 * 1000 - Date.now()
+    return {
+      ...user,
+      trialDays,
+      trialExpired: !exempt && remaining <= 0,
+      trialRemainingMs: exempt ? null : Math.max(0, remaining),
+    }
   }
 
   /** 修改当前用户昵称，返回更新后的用户信息（不含密码） */

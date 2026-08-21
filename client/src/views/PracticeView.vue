@@ -41,8 +41,12 @@ const generateBtnText = computed(() => {
 async function generateQuestion() {
   if (generating.value) return
   if (!userStore.aiAvailable) {
-    message.warning('要使用 AI 功能必须先进行配置')
-    router.push('/profile')
+    if (userStore.user?.trialExpired) {
+      message.warning('7 天试用期已到，请联系管理员升级会员以继续使用 AI 功能')
+    } else {
+      message.warning('要使用 AI 功能必须先进行配置')
+      router.push('/profile')
+    }
     return
   }
   generating.value = true
@@ -152,10 +156,7 @@ onMounted(() => {
 
     <!-- 例题库（可折叠，位于考点最上方，上一题/下一题浏览） -->
     <n-collapse v-model:expanded-names="bankExpanded" class="bank-collapse">
-      <n-collapse-item
-        name="bank"
-        :title="`📚 例题库${bankQuestions.length ? `（${bankQuestions.length} 题）` : ''}`"
-      >
+      <n-collapse-item name="bank" :title="`📚 例题库${bankQuestions.length ? `（${bankQuestions.length} 题）` : ''}`">
         <div v-if="bankLoading" class="bank-loading">
           <n-spin size="small" />
         </div>
@@ -163,20 +164,12 @@ onMounted(() => {
           <div class="bank-nav">
             <n-button size="small" :disabled="bankIndex <= 0" @click="prevBank">上一题</n-button>
             <span class="bank-count">{{ bankIndex + 1 }} / {{ bankQuestions.length }}</span>
-            <n-button
-              size="small"
-              :disabled="bankIndex >= bankQuestions.length - 1"
-              @click="nextBank"
-              >下一题
+            <n-button size="small" :disabled="bankIndex >= bankQuestions.length - 1" @click="nextBank">下一题
             </n-button>
           </div>
           <n-divider style="margin: 10px 0" />
-          <QuestionCard
-            :question="bankCurrent"
-            :question-type="bankType"
-            :point-id="pointId"
-            :point-title="practiceTitle"
-          />
+          <QuestionCard :question="bankCurrent" :question-type="bankType" :point-id="pointId"
+            :point-title="practiceTitle" />
         </template>
         <div v-else class="bank-empty">该考点暂无例题</div>
       </n-collapse-item>
@@ -197,17 +190,13 @@ onMounted(() => {
             </n-space>
             <n-button type="success" :loading="generating" @click="generateQuestion">{{
               generateBtnText
-            }}</n-button>
+              }}</n-button>
           </n-space>
         </n-card>
 
         <n-card v-if="generated" class="generated-card" size="small">
-          <QuestionCard
-            :question="generated"
-            :question-type="generatedType"
-            :point-id="pointId"
-            :point-title="practiceTitle"
-          />
+          <QuestionCard :question="generated" :question-type="generatedType" :point-id="pointId"
+            :point-title="practiceTitle" />
         </n-card>
       </n-collapse-item>
     </n-collapse>

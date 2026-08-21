@@ -20,6 +20,21 @@ const createdAt = computed(() =>
   userStore.user?.createdAt ? dayjs(userStore.user.createdAt).format('YYYY-MM-DD HH:mm') : '-',
 )
 
+/** 免费试用剩余时间文案（仅普通用户；会员/管理员不限） */
+const trialRemainingText = computed(() => {
+  const u = userStore.user
+  if (!u) return ''
+  if (u.role === 'member' || u.role === 'admin') return '不限'
+  if (u.trialExpired) return '已到期'
+  const ms = u.trialRemainingMs ?? 0
+  const days = Math.floor(ms / 86400000)
+  const hours = Math.floor((ms % 86400000) / 3600000)
+  const mins = Math.floor((ms % 3600000) / 60000)
+  if (days > 0) return `${days} 天 ${hours} 小时`
+  if (hours > 0) return `${hours} 小时 ${mins} 分`
+  return `${Math.max(mins, 1)} 分钟`
+})
+
 // 昵称修改
 const nicknameInput = ref(userStore.user?.nickname ?? '')
 const editingNickname = ref(false)
@@ -260,11 +275,13 @@ async function queryBalance() {
   }
 }
 
-/** 拉取最新个人资料（含答题数）并更新本地用户 */
+/** 拉取最新个人资料（含答题数与试用期）并更新本地用户 */
 async function loadProfile() {
   try {
     const profile = await api<User>('/profile')
     userStore.setProfile(profile)
+    // 试用期状态可能变化，同步刷新 AI 可用性（试用期到则 AI 禁用）
+    void userStore.refreshAiAvailable()
   } catch {
     // 拉取失败保持本地数据
   }
@@ -287,14 +304,8 @@ onMounted(() => {
         <n-descriptions-item label="昵称">
           <div class="nickname-row">
             <template v-if="editingNickname">
-              <n-input
-                v-model:value="nicknameInput"
-                placeholder="请输入昵称（1-20 位，中文/字母/数字/下划线）"
-                :maxlength="20"
-                size="small"
-                style="max-width: 260px"
-                @keyup.enter="saveNickname"
-              />
+              <n-input v-model:value="nicknameInput" placeholder="请输入昵称（1-20 位，中文/字母/数字/下划线）" :maxlength="20"
+                size="small" style="max-width: 260px" @keyup.enter="saveNickname" />
               <n-button size="small" type="primary" :loading="savingNickname" @click="saveNickname">
                 保存
               </n-button>
@@ -309,6 +320,9 @@ onMounted(() => {
         <n-descriptions-item label="角色">
           {{ roleLabels[userStore.user?.role ?? ''] ?? userStore.user?.role ?? '-' }}
         </n-descriptions-item>
+        <n-descriptions-item v-if="userStore.user?.role === 'user'" label="剩余试用期">
+          {{ trialRemainingText }}
+        </n-descriptions-item>
         <n-descriptions-item label="注册时间">
           {{ createdAt }}
         </n-descriptions-item>
@@ -322,12 +336,8 @@ onMounted(() => {
       <n-space vertical :size="12">
         <n-form label-placement="left" label-width="60">
           <n-form-item label="公司">
-            <n-select
-              v-model:value="aiProvider"
-              :options="aiProviderOptions"
-              style="width: 100%"
-              @update:value="onProviderChange"
-            />
+            <n-select v-model:value="aiProvider" :options="aiProviderOptions" style="width: 100%"
+              @update:value="onProviderChange" />
           </n-form-item>
           <n-form-item label="模型">
             <div style="width: 100%">
@@ -337,13 +347,8 @@ onMounted(() => {
             </div>
           </n-form-item>
           <n-form-item label="Key">
-            <n-input
-              v-model:value="apiKeyInput"
-              type="password"
-              show-password-on="click"
-              placeholder="sk- 开头的 API Key"
-              style="width: 100%"
-            />
+            <n-input v-model:value="apiKeyInput" type="password" show-password-on="click" placeholder="sk- 开头的 API Key"
+              style="width: 100%" />
           </n-form-item>
         </n-form>
         <div class="ai-tip">
@@ -353,11 +358,7 @@ onMounted(() => {
         </div>
         <div class="ai-tip">
           💰 计费标准：
-          <a
-            href="https://api-docs.deepseek.com/zh-cn/quick_start/pricing"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a href="https://api-docs.deepseek.com/zh-cn/quick_start/pricing" target="_blank" rel="noopener noreferrer">
             DeepSeek 模型 &amp; 价格
           </a>
         </div>
@@ -372,18 +373,10 @@ onMounted(() => {
         <div v-if="hasApiKey" class="ai-status">✅ 已设置 DeepSeek API Key（{{ aiModel }}）</div>
         <n-space :size="8" wrap>
           <n-button type="primary" :loading="savingAi" @click="saveAiConfig">保存配置</n-button>
-          <n-button :disabled="!hasApiKey" :loading="verifyingKey" @click="checkKey"
-            >检测 Key 可用</n-button
-          >
-          <n-button :disabled="!hasApiKey" :loading="queryingBalance" @click="queryBalance"
-            >查询余额</n-button
-          >
+          <n-button :disabled="!hasApiKey" :loading="verifyingKey" @click="checkKey">检测 Key 可用</n-button>
+          <n-button :disabled="!hasApiKey" :loading="queryingBalance" @click="queryBalance">查询余额</n-button>
         </n-space>
-        <div
-          v-if="verifyResult"
-          class="ai-result"
-          :class="verifyResult.valid ? 'ai-result-ok' : 'ai-result-err'"
-        >
+        <div v-if="verifyResult" class="ai-result" :class="verifyResult.valid ? 'ai-result-ok' : 'ai-result-err'">
           {{ verifyResult.valid ? '✅' : '❌' }} {{ verifyResult.message }}
         </div>
         <div v-if="balanceResult" class="ai-balance">
@@ -401,47 +394,24 @@ onMounted(() => {
     </n-card>
     <n-button type="error" block class="logout-btn" @click="handleLogout"> 退出登录 </n-button>
 
-    <n-modal
-      v-model:show="showPwdModal"
-      preset="card"
-      title="修改密码"
-      style="max-width: 420px"
-      :bordered="false"
-      @keydown.esc="showPwdModal = false"
-    >
+    <n-modal v-model:show="showPwdModal" preset="card" title="修改密码" style="max-width: 420px" :bordered="false"
+      @keydown.esc="showPwdModal = false">
       <n-form label-placement="left" label-width="90" size="large">
         <n-form-item label="当前密码">
-          <n-input
-            v-model:value="pwdCurrent"
-            type="password"
-            show-password-on="click"
-            placeholder="请输入当前密码"
-          />
+          <n-input v-model:value="pwdCurrent" type="password" show-password-on="click" placeholder="请输入当前密码" />
         </n-form-item>
         <n-form-item label="新密码">
-          <n-input
-            v-model:value="pwdNew"
-            type="password"
-            show-password-on="click"
-            placeholder="至少 6 位"
-          />
+          <n-input v-model:value="pwdNew" type="password" show-password-on="click" placeholder="至少 6 位" />
         </n-form-item>
         <n-form-item label="确认新密码">
-          <n-input
-            v-model:value="pwdConfirm"
-            type="password"
-            show-password-on="click"
-            placeholder="再次输入新密码"
-            @keyup.enter="savePassword"
-          />
+          <n-input v-model:value="pwdConfirm" type="password" show-password-on="click" placeholder="再次输入新密码"
+            @keyup.enter="savePassword" />
         </n-form-item>
       </n-form>
       <template #footer>
         <n-space justify="end">
           <n-button @click="showPwdModal = false">取消</n-button>
-          <n-button type="primary" :loading="savingPassword" @click="savePassword"
-            >确认修改</n-button
-          >
+          <n-button type="primary" :loading="savingPassword" @click="savePassword">确认修改</n-button>
         </n-space>
       </template>
     </n-modal>

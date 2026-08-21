@@ -10,6 +10,10 @@ export interface User {
   role: string
   createdAt: string
   answerCount?: number
+  // 免费试用期信息（普通用户）：配置天数 / 是否已到期 / 剩余毫秒（会员与管理员为 null）
+  trialDays?: number
+  trialExpired?: boolean
+  trialRemainingMs?: number | null
 }
 
 interface LoginResult {
@@ -43,6 +47,11 @@ export const useUserStore = defineStore('user', () => {
   /** 刷新 AI 可用状态：有 API Key 且检测可用才为 true */
   async function refreshAiAvailable() {
     if (!token.value) {
+      aiAvailable.value = false
+      return
+    }
+    // 普通用户试用期已到：禁用 AI（会员/管理员不受限）
+    if (user.value?.role === 'user' && user.value.trialExpired) {
       aiAvailable.value = false
       return
     }

@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Query,
   Req,
   UseGuards,
@@ -28,6 +29,12 @@ export class UserController {
     @Query('keyword') keyword = '',
   ) {
     return this.userService.listUsers(Number(page), Number(pageSize), keyword)
+  }
+
+  /** 单向升级为会员：普通用户 → 会员（幂等，管理员不可被降级） */
+  @Patch(':id/promote')
+  promoteUser(@Param('id') id: string) {
+    return this.userService.promoteToMember(id)
   }
 
   @Delete(':id')

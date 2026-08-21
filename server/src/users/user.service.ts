@@ -51,6 +51,26 @@ export class UserService {
     }
   }
 
+  /** 单向升级：普通用户 → 会员。幂等：已是会员直接返回；管理员不允许被降级为会员 */
+  async promoteToMember(id: string) {
+    const user = await db.select().from(schema.users).where(eq(schema.users.id, id)).get()
+    if (!user) {
+      throw new NotFoundException('用户不存在')
+    }
+    if (user.role === UserRole.Admin) {
+      throw new BadRequestException('管理员账号无需升级为会员')
+    }
+    if (user.role === UserRole.Member) {
+      return { id, role: UserRole.Member }
+    }
+    await db
+      .update(schema.users)
+      .set({ role: UserRole.Member })
+      .where(eq(schema.users.id, id))
+      .run()
+    return { id, role: UserRole.Member }
+  }
+
   /** 答题数 +1（每次提交一道题目），返回最新答题数 */
   async incrementAnswerCount(id: string) {
     const updated = await db

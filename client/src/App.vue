@@ -15,9 +15,8 @@ const userStore = useUserStore()
  */
 const themeOverrides = computed<GlobalThemeOverrides>(() => {
   const base =
-    parseFloat(
-      getComputedStyle(document.documentElement).getPropertyValue('--base-font-size'),
-    ) || 16
+    parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--base-font-size')) ||
+    16
   const fs = Math.round(base * 0.875) // 正文 = 基准的 14/16
   return {
     common: { fontSize: `${fs}px` },

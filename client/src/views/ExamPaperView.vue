@@ -121,7 +121,9 @@ async function loadPaper(year: number) {
       if (targetPart) expandedNames.value = [targetPart]
       highlightBlock.value = targetBlock
       nextTick(() => {
-        document.getElementById(`block-${targetBlock}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        document
+          .getElementById(`block-${targetBlock}`)
+          ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
       })
     }
   } catch (e) {
@@ -174,7 +176,9 @@ function jumpToBlock(partId: string, blockId: string) {
   // 等 collapse 内容渲染完成后再滚动（n-collapse 折叠内容为懒渲染）
   nextTick(() => {
     setTimeout(() => {
-      document.getElementById(`block-${blockId}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      document
+        .getElementById(`block-${blockId}`)
+        ?.scrollIntoView({ behavior: 'smooth', block: 'start' })
     }, 150)
   })
 }
@@ -210,9 +214,15 @@ onMounted(async () => {
         <aside class="toc-sidebar">
           <div class="toc-sidebar-title">📑 目录</div>
           <n-space vertical :size="4">
-            <n-button v-for="item in tocItems" :key="item.blockId" size="small" block
+            <n-button
+              v-for="item in tocItems"
+              :key="item.blockId"
+              size="small"
+              block
               :type="highlightBlock === item.blockId ? 'primary' : 'default'"
-              :secondary="highlightBlock !== item.blockId" @click="jumpToBlock(item.partId, item.blockId)">
+              :secondary="highlightBlock !== item.blockId"
+              @click="jumpToBlock(item.partId, item.blockId)"
+            >
               {{ item.label }}
             </n-button>
           </n-space>
@@ -224,8 +234,13 @@ onMounted(async () => {
             <n-space vertical :size="12">
               <n-space>
                 <n-button-group size="small">
-                  <n-button v-for="y in years" :key="y.year" :type="selectedYear === y.year ? 'primary' : 'default'"
-                    :secondary="selectedYear !== y.year" @click="switchYear(y.year)">
+                  <n-button
+                    v-for="y in years"
+                    :key="y.year"
+                    :type="selectedYear === y.year ? 'primary' : 'default'"
+                    :secondary="selectedYear !== y.year"
+                    @click="switchYear(y.year)"
+                  >
                     {{ y.year }} 年
                   </n-button>
                 </n-button-group>
@@ -246,22 +261,38 @@ onMounted(async () => {
           <n-card class="toc-card" size="small">
             <div class="toc-title">📑 目录</div>
             <n-space wrap :size="8">
-              <n-button v-for="item in tocItems" :key="item.blockId" size="small"
+              <n-button
+                v-for="item in tocItems"
+                :key="item.blockId"
+                size="small"
                 :type="highlightBlock === item.blockId ? 'primary' : 'default'"
-                :secondary="highlightBlock !== item.blockId" @click="jumpToBlock(item.partId, item.blockId)">
+                :secondary="highlightBlock !== item.blockId"
+                @click="jumpToBlock(item.partId, item.blockId)"
+              >
                 {{ item.label }}
               </n-button>
             </n-space>
           </n-card>
 
           <n-collapse v-model:expanded-names="expandedNames">
-            <n-collapse-item v-for="part in paper.parts" :key="part.id" :name="part.id"
-              :title="`${part.title}（${part.score}）`">
-              <div v-for="block in part.blocks" :key="block.id" :id="'block-' + block.id" class="block"
-                :class="{ 'block-highlight': highlightBlock === block.id }">
+            <n-collapse-item
+              v-for="part in paper.parts"
+              :key="part.id"
+              :name="part.id"
+              :title="`${part.title}（${part.score}）`"
+            >
+              <div
+                v-for="block in part.blocks"
+                :key="block.id"
+                :id="'block-' + block.id"
+                class="block"
+                :class="{ 'block-highlight': highlightBlock === block.id }"
+              >
                 <div class="block-header">
                   <n-space :size="8" align="center">
-                    <n-tag v-if="block.type" size="small" type="success" :bordered="false">{{ block.type }}</n-tag>
+                    <n-tag v-if="block.type" size="small" type="success" :bordered="false">{{
+                      block.type
+                    }}</n-tag>
                     <strong>{{ block.title }}</strong>
                   </n-space>
                   <n-tag size="small" type="info">{{ block.score }}</n-tag>
@@ -299,8 +330,12 @@ onMounted(async () => {
                           {{ q.analysis }}
                         </div>
                         <div class="q-actions">
-                          <n-button size="tiny" secondary @click="onGenerateSimilar(q, passage.content)">✨
-                            生成类似题目</n-button>
+                          <n-button
+                            size="tiny"
+                            secondary
+                            @click="onGenerateSimilar(q, passage.content)"
+                            >✨ 生成类似题目</n-button
+                          >
                         </div>
                       </div>
                     </div>
@@ -311,7 +346,9 @@ onMounted(async () => {
                   <div v-if="q.stem || q.choices || showAnswer" class="question">
                     <div class="q-no">{{ q.no }}.</div>
                     <div class="q-body">
-                      <div v-if="q.stem" class="q-stem" style="white-space: pre-line">{{ q.stem }}</div>
+                      <div v-if="q.stem" class="q-stem" style="white-space: pre-line">
+                        {{ q.stem }}
+                      </div>
                       <ul v-if="q.choices" class="q-choices">
                         <li v-for="(choice, i) in q.choices" :key="i">
                           <span class="opt-letter">{{ optionLetters[i] }}</span>
@@ -331,8 +368,12 @@ onMounted(async () => {
                         {{ q.analysis }}
                       </div>
                       <div class="q-actions">
-                        <n-button size="tiny" secondary @click="onGenerateSimilar(q, block.directions ?? block.title)">✨
-                          生成类似题目</n-button>
+                        <n-button
+                          size="tiny"
+                          secondary
+                          @click="onGenerateSimilar(q, block.directions ?? block.title)"
+                          >✨ 生成类似题目</n-button
+                        >
                       </div>
                     </div>
                   </div>
@@ -356,8 +397,14 @@ onMounted(async () => {
         </div>
       </div>
 
-      <n-modal v-model:show="showSimilarModal" preset="card" title="生成类似题目" style="max-width: 720px" :bordered="false"
-        @keydown.esc="showSimilarModal = false">
+      <n-modal
+        v-model:show="showSimilarModal"
+        preset="card"
+        title="生成类似题目"
+        style="max-width: 720px"
+        :bordered="false"
+        @keydown.esc="showSimilarModal = false"
+      >
         <div v-if="similarQuestion" class="sim-modal">
           <div class="sim-section">
             <div class="sim-label">📖 上下文</div>
@@ -417,7 +464,9 @@ onMounted(async () => {
         <template #footer>
           <n-space justify="end">
             <n-button @click="showSimilarModal = false">关闭</n-button>
-            <n-button :loading="generating" type="primary" @click="confirmGenerate">{{ generateBtnText }}</n-button>
+            <n-button :loading="generating" type="primary" @click="confirmGenerate">{{
+              generateBtnText
+            }}</n-button>
           </n-space>
         </template>
       </n-modal>

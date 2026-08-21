@@ -1,0 +1,11 @@
+# 依赖与构建产物
+node_modules/
+dist/
+
+# 自动生成文件（构建/开发时由插件重新生成，无需格式化与检查）
+client/src/auto-imports.d.ts
+client/src/components.d.ts
+
+# 数据库与锁文件
+server/data/
+*.db

@@ -81,19 +81,25 @@ async function handleSubmit() {
           <n-input v-model:value="form.email" placeholder="用户名即邮箱" />
         </n-form-item>
         <n-form-item label="密码" path="password">
-          <n-input v-model:value="form.password" type="password" show-password-on="click" placeholder="至少 6 位" />
+          <n-input
+            v-model:value="form.password"
+            type="password"
+            show-password-on="click"
+            placeholder="至少 6 位"
+          />
         </n-form-item>
         <n-form-item label="确认密码" path="confirmPassword">
-          <n-input v-model:value="form.confirmPassword" type="password" show-password-on="click" placeholder="再次输入密码"
-            @keyup.enter="handleSubmit" />
+          <n-input
+            v-model:value="form.confirmPassword"
+            type="password"
+            show-password-on="click"
+            placeholder="再次输入密码"
+            @keyup.enter="handleSubmit"
+          />
         </n-form-item>
-        <n-button type="primary" block :loading="loading" @click="handleSubmit">
-          注册
-        </n-button>
+        <n-button type="primary" block :loading="loading" @click="handleSubmit"> 注册 </n-button>
       </n-form>
-      <n-p class="auth-tip">
-        已有账号？<n-a @click="router.push('/login')">去登录</n-a>
-      </n-p>
+      <n-p class="auth-tip"> 已有账号？<n-a @click="router.push('/login')">去登录</n-a> </n-p>
     </n-card>
   </div>
 </template>

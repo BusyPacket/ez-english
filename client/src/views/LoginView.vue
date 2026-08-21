@@ -64,13 +64,9 @@ async function handleSubmit() {
             @keyup.enter="handleSubmit"
           />
         </n-form-item>
-        <n-button type="primary" block :loading="loading" @click="handleSubmit">
-          登录
-        </n-button>
+        <n-button type="primary" block :loading="loading" @click="handleSubmit"> 登录 </n-button>
       </n-form>
-      <n-p class="auth-tip">
-        还没有账号？<n-a @click="router.push('/register')">去注册</n-a>
-      </n-p>
+      <n-p class="auth-tip"> 还没有账号？<n-a @click="router.push('/register')">去注册</n-a> </n-p>
     </n-card>
   </div>
 </template>

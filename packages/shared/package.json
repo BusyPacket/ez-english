@@ -15,9 +15,12 @@
   },
   "scripts": {
     "build": "tsup",
-    "type-check": "tsc --noEmit -p tsconfig.json"
+    "type-check": "tsc --noEmit -p tsconfig.json",
+    "format": "prettier --write \"src/**/*.ts\" \"tsup.config.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\" \"tsup.config.ts\""
   },
   "devDependencies": {
+    "prettier": "3.9.5",
     "tsup": "^8.5.0",
     "typescript": "~5.7.0"
   }

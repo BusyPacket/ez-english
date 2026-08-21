@@ -60,7 +60,13 @@ pnpm dev
 # 3. 构建 / 类型检查
 pnpm build          # 构建所有包
 pnpm type-check     # 前端 vue-tsc 类型检查
+
+# 4. 本地 CI 检查（依赖校验 → Prettier → 类型 → lint → 构建）
+pnpm check          # 完整检查（含 pnpm install --frozen-lockfile）
+pnpm check:quick    # 跳过依赖校验，快速检查
 ```
+
+> 本地 CI 脚本位于 `scripts/ci.mjs`，按顺序执行：`pnpm install --frozen-lockfile` → `format:check` → 全子包 `type-check` → `lint` → `build`，任一步失败即终止并返回非零退出码。
 
 ## 后端 API
 

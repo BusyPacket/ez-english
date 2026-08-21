@@ -8,7 +8,11 @@
     "dev:server": "pnpm --filter server dev",
     "build": "pnpm -r run build",
     "type-check": "pnpm --filter client type-check",
-    "lint": "pnpm -r run lint"
+    "lint": "pnpm -r run lint",
+    "format": "pnpm -r run format",
+    "format:check": "pnpm -r run format:check",
+    "check": "node scripts/ci.mjs",
+    "check:quick": "node scripts/ci.mjs --skip-install"
   },
   "pnpm": {
     "overrides": {

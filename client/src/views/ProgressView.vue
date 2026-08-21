@@ -45,33 +45,67 @@ function openPractice(id: string, title: string) {
           <n-tag type="success">已掌握 {{ masteredCount }}</n-tag>
         </n-space>
       </n-space>
-      <n-progress type="line" :percentage="percent" :color="progressColor" indicator-placement="outside" />
+      <n-progress
+        type="line"
+        :percentage="percent"
+        :color="progressColor"
+        indicator-placement="outside"
+      />
     </n-card>
 
     <n-collapse :default-expanded-names="knowledgeSections.map((s) => s.id)">
-      <n-collapse-item v-for="section in knowledgeSections" :key="section.id" :name="section.id" :title="section.title">
+      <n-collapse-item
+        v-for="section in knowledgeSections"
+        :key="section.id"
+        :name="section.id"
+        :title="section.title"
+      >
         <n-space vertical>
           <template v-for="point in section.points" :key="point.id">
             <template v-if="point.children?.length">
               <div class="point-group">{{ point.title }}</div>
               <div v-for="child in point.children" :key="child.id" class="point-row point-row-sub">
-                <span class="point-title" @click="openPractice(child.id, child.title)">{{ child.title }}</span>
-                <n-button size="tiny" secondary class="practice-btn" @click="openPractice(child.id, child.title)">
+                <span class="point-title" @click="openPractice(child.id, child.title)">{{
+                  child.title
+                }}</span>
+                <n-button
+                  size="tiny"
+                  secondary
+                  class="practice-btn"
+                  @click="openPractice(child.id, child.title)"
+                >
                   练习
                 </n-button>
-                <n-select class="point-select" size="small" style="width: 120px"
-                  :value="progressStore.getStatus(child.id)" :options="STATUS_OPTIONS"
-                  @update:value="(value) => onStatusChange(child.id, value)" />
+                <n-select
+                  class="point-select"
+                  size="small"
+                  style="width: 120px"
+                  :value="progressStore.getStatus(child.id)"
+                  :options="STATUS_OPTIONS"
+                  @update:value="(value) => onStatusChange(child.id, value)"
+                />
               </div>
             </template>
             <div v-else class="point-row">
-              <span class="point-title" @click="openPractice(point.id, point.title)">{{ point.title }}</span>
-              <n-button size="tiny" secondary class="practice-btn" @click="openPractice(point.id, point.title)">
+              <span class="point-title" @click="openPractice(point.id, point.title)">{{
+                point.title
+              }}</span>
+              <n-button
+                size="tiny"
+                secondary
+                class="practice-btn"
+                @click="openPractice(point.id, point.title)"
+              >
                 练习
               </n-button>
-              <n-select class="point-select" size="small" style="width: 120px"
-                :value="progressStore.getStatus(point.id)" :options="STATUS_OPTIONS"
-                @update:value="(value) => onStatusChange(point.id, value)" />
+              <n-select
+                class="point-select"
+                size="small"
+                style="width: 120px"
+                :value="progressStore.getStatus(point.id)"
+                :options="STATUS_OPTIONS"
+                @update:value="(value) => onStatusChange(point.id, value)"
+              />
             </div>
           </template>
         </n-space>

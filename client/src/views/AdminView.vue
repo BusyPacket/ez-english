@@ -64,8 +64,7 @@ const columns: DataTableColumns<UserRow> = [
   {
     title: '上次活跃',
     key: 'lastActiveAt',
-    render: (row) =>
-      row.lastActiveAt ? dayjs(row.lastActiveAt).format('YYYY-MM-DD HH:mm') : '-',
+    render: (row) => (row.lastActiveAt ? dayjs(row.lastActiveAt).format('YYYY-MM-DD HH:mm') : '-'),
   },
   {
     title: '操作',
@@ -458,7 +457,11 @@ onMounted(() => {
       <!-- 侧边栏（桌面端显示） -->
       <aside class="admin-sider">
         <n-card size="small" :bordered="true">
-          <n-menu :value="currentTab" :options="menuOptions" @update:value="(v) => (currentTab = v as AdminTab)" />
+          <n-menu
+            :value="currentTab"
+            :options="menuOptions"
+            @update:value="(v) => (currentTab = v as AdminTab)"
+          />
         </n-card>
       </aside>
 
@@ -477,14 +480,34 @@ onMounted(() => {
           <n-card>
             <n-h2>用户管理</n-h2>
             <div class="toolbar">
-              <n-input v-model:value="keyword" placeholder="搜索邮箱或昵称" clearable style="max-width: 280px"
-                @keyup.enter="handleSearch" />
+              <n-input
+                v-model:value="keyword"
+                placeholder="搜索邮箱或昵称"
+                clearable
+                style="max-width: 280px"
+                @keyup.enter="handleSearch"
+              />
               <n-button type="primary" @click="handleSearch">搜索</n-button>
             </div>
-            <n-data-table :columns="columns" :data="data" :loading="loading" :bordered="false"
-              :row-key="(row) => row.id" />
-            <n-pagination class="admin-pagination" :page="page" :page-size="pageSize" :item-count="total"
-              @update:page="(p) => { page = p; fetchUsers() }" />
+            <n-data-table
+              :columns="columns"
+              :data="data"
+              :loading="loading"
+              :bordered="false"
+              :row-key="(row) => row.id"
+            />
+            <n-pagination
+              class="admin-pagination"
+              :page="page"
+              :page-size="pageSize"
+              :item-count="total"
+              @update:page="
+                (p) => {
+                  page = p
+                  fetchUsers()
+                }
+              "
+            />
           </n-card>
         </div>
 
@@ -506,8 +529,12 @@ onMounted(() => {
         <div v-show="currentTab === 'feedback'">
           <n-card>
             <n-h2>反馈管理</n-h2>
-            <n-data-table :columns="feedbackColumns" :data="feedbackList" :bordered="false"
-              :row-key="(row) => row.id" />
+            <n-data-table
+              :columns="feedbackColumns"
+              :data="feedbackList"
+              :bordered="false"
+              :row-key="(row) => row.id"
+            />
           </n-card>
         </div>
 
@@ -516,24 +543,60 @@ onMounted(() => {
           <n-card>
             <n-h2>例题管理</n-h2>
             <div class="toolbar">
-              <n-input v-model:value="questionKeyword" placeholder="搜索题干" clearable style="max-width: 240px"
-                @keyup.enter="handleQuestionSearch" />
-              <n-select v-model:value="questionPointFilter" :options="pointOptions" clearable filterable
-                placeholder="全部考点" style="max-width: 220px"
-                @update:value="() => { questionPage = 1; fetchQuestions() }" />
+              <n-input
+                v-model:value="questionKeyword"
+                placeholder="搜索题干"
+                clearable
+                style="max-width: 240px"
+                @keyup.enter="handleQuestionSearch"
+              />
+              <n-select
+                v-model:value="questionPointFilter"
+                :options="pointOptions"
+                clearable
+                filterable
+                placeholder="全部考点"
+                style="max-width: 220px"
+                @update:value="
+                  () => {
+                    questionPage = 1
+                    fetchQuestions()
+                  }
+                "
+              />
               <n-button type="primary" @click="handleQuestionSearch">搜索</n-button>
             </div>
-            <n-data-table :columns="questionColumns" :data="questionRows" :loading="questionLoading" :bordered="false"
-              :row-key="(row) => row.id" />
-            <n-pagination class="admin-pagination" :page="questionPage" :page-size="questionPageSize"
-              :item-count="questionTotal" @update:page="(p) => { questionPage = p; fetchQuestions() }" />
+            <n-data-table
+              :columns="questionColumns"
+              :data="questionRows"
+              :loading="questionLoading"
+              :bordered="false"
+              :row-key="(row) => row.id"
+            />
+            <n-pagination
+              class="admin-pagination"
+              :page="questionPage"
+              :page-size="questionPageSize"
+              :item-count="questionTotal"
+              @update:page="
+                (p) => {
+                  questionPage = p
+                  fetchQuestions()
+                }
+              "
+            />
           </n-card>
         </div>
       </div>
     </div>
 
     <!-- 例题详情弹窗 -->
-    <n-modal v-model:show="detailVisible" preset="card" title="例题详情" style="width: 600px; max-width: 92vw">
+    <n-modal
+      v-model:show="detailVisible"
+      preset="card"
+      title="例题详情"
+      style="width: 600px; max-width: 92vw"
+    >
       <template v-if="detailLoading">
         <div class="detail-loading">
           <n-spin size="large" />
@@ -542,7 +605,9 @@ onMounted(() => {
       <template v-else-if="detail">
         <n-descriptions label-placement="left" :column="1" size="small">
           <n-descriptions-item label="考点">{{ detail.pointTitle ?? '-' }}</n-descriptions-item>
-          <n-descriptions-item label="类型">{{ typeLabels[detail.type] ?? detail.type }}</n-descriptions-item>
+          <n-descriptions-item label="类型">{{
+            typeLabels[detail.type] ?? detail.type
+          }}</n-descriptions-item>
         </n-descriptions>
         <div class="detail-stem">{{ detail.stem }}</div>
         <div v-if="detail.choices?.length" class="detail-choices">
@@ -559,7 +624,11 @@ onMounted(() => {
           <div>{{ detail.analysis }}</div>
         </div>
         <div class="detail-actions">
-          <n-popconfirm @positive-click="handleDeleteQuestion" positive-text="删除" negative-text="取消">
+          <n-popconfirm
+            @positive-click="handleDeleteQuestion"
+            positive-text="删除"
+            negative-text="取消"
+          >
             <template #trigger>
               <n-button type="error" ghost>删除</n-button>
             </template>
@@ -571,7 +640,12 @@ onMounted(() => {
     </n-modal>
 
     <!-- 例题编辑弹窗 -->
-    <n-modal v-model:show="editVisible" preset="card" title="编辑例题" style="width: 640px; max-width: 94vw">
+    <n-modal
+      v-model:show="editVisible"
+      preset="card"
+      title="编辑例题"
+      style="width: 640px; max-width: 94vw"
+    >
       <template v-if="editLoading">
         <div class="detail-loading">
           <n-spin size="large" />
@@ -580,14 +654,27 @@ onMounted(() => {
       <template v-else-if="editing">
         <n-form label-placement="left" label-width="80" size="small">
           <n-form-item label="考点">
-            <n-select v-model:value="editing.pointId" :options="pointOptions" filterable clearable placeholder="选择考点"
-              @update:value="onEditPointChange" />
+            <n-select
+              v-model:value="editing.pointId"
+              :options="pointOptions"
+              filterable
+              clearable
+              placeholder="选择考点"
+              @update:value="onEditPointChange"
+            />
           </n-form-item>
           <n-form-item label="类型">
-            <n-tag size="small" type="info" :bordered="false">{{ typeLabels[editing.type] ?? editing.type }}</n-tag>
+            <n-tag size="small" type="info" :bordered="false">{{
+              typeLabels[editing.type] ?? editing.type
+            }}</n-tag>
           </n-form-item>
           <n-form-item label="题干">
-            <n-input v-model:value="editing.stem" type="textarea" :rows="2" placeholder="题目内容" />
+            <n-input
+              v-model:value="editing.stem"
+              type="textarea"
+              :rows="2"
+              placeholder="题目内容"
+            />
           </n-form-item>
           <n-form-item label="选项">
             <div class="edit-choices">
@@ -598,11 +685,20 @@ onMounted(() => {
             </div>
           </n-form-item>
           <n-form-item label="答案">
-            <n-select v-model:value="editing.answer" :options="answerOptions" placeholder="选择正确答案"
-              style="width: 120px" />
+            <n-select
+              v-model:value="editing.answer"
+              :options="answerOptions"
+              placeholder="选择正确答案"
+              style="width: 120px"
+            />
           </n-form-item>
           <n-form-item label="解析">
-            <n-input v-model:value="editing.analysis" type="textarea" :rows="3" placeholder="答案解析" />
+            <n-input
+              v-model:value="editing.analysis"
+              type="textarea"
+              :rows="3"
+              placeholder="答案解析"
+            />
           </n-form-item>
         </n-form>
         <div class="edit-actions">

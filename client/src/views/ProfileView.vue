@@ -20,8 +20,6 @@ const createdAt = computed(() =>
   userStore.user?.createdAt ? dayjs(userStore.user.createdAt).format('YYYY-MM-DD HH:mm') : '-',
 )
 
-
-
 // 昵称修改
 const nicknameInput = ref(userStore.user?.nickname ?? '')
 const editingNickname = ref(false)
@@ -176,7 +174,9 @@ async function loadAiConfig() {
     // 2. 实时模型
     await refreshLiveModels()
     // 3. 已保存配置
-    const cfg = await api<{ aiProvider: string; model: string; hasApiKey: boolean }>('/profile/ai-config')
+    const cfg = await api<{ aiProvider: string; model: string; hasApiKey: boolean }>(
+      '/profile/ai-config',
+    )
     aiProvider.value = cfg.aiProvider
     aiModel.value = cfg.model
     hasApiKey.value = cfg.hasApiKey
@@ -229,9 +229,12 @@ async function checkKey() {
   verifyResult.value = null
   verifyingKey.value = true
   try {
-    verifyResult.value = await api<{ valid: boolean; message: string }>('/profile/ai-config/verify', {
-      method: 'POST',
-    })
+    verifyResult.value = await api<{ valid: boolean; message: string }>(
+      '/profile/ai-config/verify',
+      {
+        method: 'POST',
+      },
+    )
     userStore.setAiAvailable(verifyResult.value?.valid ?? false)
   } catch (e) {
     verifyResult.value = { valid: false, message: (e as Error).message }
@@ -284,8 +287,14 @@ onMounted(() => {
         <n-descriptions-item label="昵称">
           <div class="nickname-row">
             <template v-if="editingNickname">
-              <n-input v-model:value="nicknameInput" placeholder="请输入昵称（1-20 位，中文/字母/数字/下划线）" :maxlength="20"
-                size="small" style="max-width: 260px" @keyup.enter="saveNickname" />
+              <n-input
+                v-model:value="nicknameInput"
+                placeholder="请输入昵称（1-20 位，中文/字母/数字/下划线）"
+                :maxlength="20"
+                size="small"
+                style="max-width: 260px"
+                @keyup.enter="saveNickname"
+              />
               <n-button size="small" type="primary" :loading="savingNickname" @click="saveNickname">
                 保存
               </n-button>
@@ -307,16 +316,18 @@ onMounted(() => {
           {{ userStore.user?.answerCount ?? 0 }}
         </n-descriptions-item>
       </n-descriptions>
-      <n-button secondary block class="pwd-btn" @click="openPwdModal">
-        修改密码
-      </n-button>
+      <n-button secondary block class="pwd-btn" @click="openPwdModal"> 修改密码 </n-button>
     </n-card>
     <n-card class="ai-card" size="small" title="AI 配置">
       <n-space vertical :size="12">
         <n-form label-placement="left" label-width="60">
           <n-form-item label="公司">
-            <n-select v-model:value="aiProvider" :options="aiProviderOptions" style="width: 100%"
-              @update:value="onProviderChange" />
+            <n-select
+              v-model:value="aiProvider"
+              :options="aiProviderOptions"
+              style="width: 100%"
+              @update:value="onProviderChange"
+            />
           </n-form-item>
           <n-form-item label="模型">
             <div style="width: 100%">
@@ -326,8 +337,13 @@ onMounted(() => {
             </div>
           </n-form-item>
           <n-form-item label="Key">
-            <n-input v-model:value="apiKeyInput" type="password" show-password-on="click" placeholder="sk- 开头的 API Key"
-              style="width: 100%" />
+            <n-input
+              v-model:value="apiKeyInput"
+              type="password"
+              show-password-on="click"
+              placeholder="sk- 开头的 API Key"
+              style="width: 100%"
+            />
           </n-form-item>
         </n-form>
         <div class="ai-tip">
@@ -338,18 +354,26 @@ onMounted(() => {
         <div class="ai-note">
           <strong>❓ 为什么需要额外配置 AI 并充值？</strong>
           <p>
-            在官方 APP 或网页内使用 AI 通常并不需要付费，但是使用 API 调用是需要付费的。本网站并不会替你向 AI
-            公司付费，为了达成某些功能，我们必须使用 API 调用的方式。你充值的所有金额都是直接转到 AI
-            公司账户，本网站不会从中获利。
+            在官方 APP 或网页内使用 AI 通常并不需要付费，但是使用 API
+            调用是需要付费的。本网站并不会替你向 AI 公司付费，为了达成某些功能，我们必须使用 API
+            调用的方式。你充值的所有金额都是直接转到 AI 公司账户，本网站不会从中获利。
           </p>
         </div>
         <div v-if="hasApiKey" class="ai-status">✅ 已设置 DeepSeek API Key（{{ aiModel }}）</div>
         <n-space :size="8" wrap>
           <n-button type="primary" :loading="savingAi" @click="saveAiConfig">保存配置</n-button>
-          <n-button :disabled="!hasApiKey" :loading="verifyingKey" @click="checkKey">检测 Key 可用</n-button>
-          <n-button :disabled="!hasApiKey" :loading="queryingBalance" @click="queryBalance">查询余额</n-button>
+          <n-button :disabled="!hasApiKey" :loading="verifyingKey" @click="checkKey"
+            >检测 Key 可用</n-button
+          >
+          <n-button :disabled="!hasApiKey" :loading="queryingBalance" @click="queryBalance"
+            >查询余额</n-button
+          >
         </n-space>
-        <div v-if="verifyResult" class="ai-result" :class="verifyResult.valid ? 'ai-result-ok' : 'ai-result-err'">
+        <div
+          v-if="verifyResult"
+          class="ai-result"
+          :class="verifyResult.valid ? 'ai-result-ok' : 'ai-result-err'"
+        >
           {{ verifyResult.valid ? '✅' : '❌' }} {{ verifyResult.message }}
         </div>
         <div v-if="balanceResult" class="ai-balance">
@@ -365,28 +389,49 @@ onMounted(() => {
         </div>
       </n-space>
     </n-card>
-    <n-button type="error" block class="logout-btn" @click="handleLogout">
-      退出登录
-    </n-button>
+    <n-button type="error" block class="logout-btn" @click="handleLogout"> 退出登录 </n-button>
 
-    <n-modal v-model:show="showPwdModal" preset="card" title="修改密码" style="max-width: 420px" :bordered="false"
-      @keydown.esc="showPwdModal = false">
+    <n-modal
+      v-model:show="showPwdModal"
+      preset="card"
+      title="修改密码"
+      style="max-width: 420px"
+      :bordered="false"
+      @keydown.esc="showPwdModal = false"
+    >
       <n-form label-placement="left" label-width="90" size="large">
         <n-form-item label="当前密码">
-          <n-input v-model:value="pwdCurrent" type="password" show-password-on="click" placeholder="请输入当前密码" />
+          <n-input
+            v-model:value="pwdCurrent"
+            type="password"
+            show-password-on="click"
+            placeholder="请输入当前密码"
+          />
         </n-form-item>
         <n-form-item label="新密码">
-          <n-input v-model:value="pwdNew" type="password" show-password-on="click" placeholder="至少 6 位" />
+          <n-input
+            v-model:value="pwdNew"
+            type="password"
+            show-password-on="click"
+            placeholder="至少 6 位"
+          />
         </n-form-item>
         <n-form-item label="确认新密码">
-          <n-input v-model:value="pwdConfirm" type="password" show-password-on="click" placeholder="再次输入新密码"
-            @keyup.enter="savePassword" />
+          <n-input
+            v-model:value="pwdConfirm"
+            type="password"
+            show-password-on="click"
+            placeholder="再次输入新密码"
+            @keyup.enter="savePassword"
+          />
         </n-form-item>
       </n-form>
       <template #footer>
         <n-space justify="end">
           <n-button @click="showPwdModal = false">取消</n-button>
-          <n-button type="primary" :loading="savingPassword" @click="savePassword">确认修改</n-button>
+          <n-button type="primary" :loading="savingPassword" @click="savePassword"
+            >确认修改</n-button
+          >
         </n-space>
       </template>
     </n-modal>

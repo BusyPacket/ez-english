@@ -137,7 +137,13 @@ onMounted(fetchLeaderboard)
       <n-alert v-if="error" type="error" :title="error" />
       <n-spin :show="loading">
         <n-empty v-if="!loading && list.length === 0" description="暂时还没有学习用户" />
-        <n-data-table v-else :columns="columns" :data="list" :bordered="false" :row-key="(row) => row.userId" />
+        <n-data-table
+          v-else
+          :columns="columns"
+          :data="list"
+          :bordered="false"
+          :row-key="(row) => row.userId"
+        />
       </n-spin>
     </n-card>
   </div>

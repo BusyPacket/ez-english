@@ -27,8 +27,9 @@ export class UserController {
     @Query('page') page = '1',
     @Query('pageSize') pageSize = '10',
     @Query('keyword') keyword = '',
+    @Query('role') role = '',
   ) {
-    return this.userService.listUsers(Number(page), Number(pageSize), keyword)
+    return this.userService.listUsers(Number(page), Number(pageSize), keyword, role)
   }
 
   /** 单向升级为会员：普通用户 → 会员（幂等，管理员不可被降级） */

@@ -5,10 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
-import { count, eq, like, or, sql } from 'drizzle-orm'
+import { and, count, eq, like, or, sql } from 'drizzle-orm'
 import { db, schema } from '../database/database'
 import { SettingsService } from '../settings/settings.service'
-import { UserRole, type RegisterDto } from './user.schema'
+import { UserRole, userRoleValues, type RegisterDto } from './user.schema'
 
 @Injectable()
 export class UserService {
@@ -17,11 +17,20 @@ export class UserService {
     return db.select().from(schema.users).where(eq(schema.users.email, email)).get()
   }
 
-  /** 分页查询用户列表（不含密码），支持按邮箱/昵称模糊搜索 */
-  async listUsers(page = 1, pageSize = 10, keyword = '') {
-    const where = keyword
-      ? or(like(schema.users.email, `%${keyword}%`), like(schema.users.nickname, `%${keyword}%`))
-      : undefined
+  /** 分页查询用户列表（不含密码），支持按邮箱/昵称模糊搜索、按角色筛选 */
+  async listUsers(page = 1, pageSize = 10, keyword = '', role = '') {
+    const conditions = []
+    if (keyword) {
+      const keywordCond = or(
+        like(schema.users.email, `%${keyword}%`),
+        like(schema.users.nickname, `%${keyword}%`),
+      )
+      if (keywordCond) conditions.push(keywordCond)
+    }
+    if (role && userRoleValues.includes(role as UserRole)) {
+      conditions.push(eq(schema.users.role, role))
+    }
+    const where = conditions.length ? and(...conditions) : undefined
     const offset = (page - 1) * pageSize
     const items = await db
       .select({

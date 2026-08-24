@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { h, onMounted, ref } from 'vue'
-import { NButton, NPopconfirm, NTag, useMessage } from 'naive-ui'
+import { NButton, NTag, useMessage } from 'naive-ui'
 import type { DataTableColumns } from 'naive-ui'
 import dayjs from 'dayjs'
 import { api } from '@/api/http'
@@ -37,6 +37,7 @@ async function handleDelete(id: string) {
     await api(`/users/${id}`, { method: 'DELETE' })
     message.success('已删除')
     fetchUsers()
+    if (detailUser.value?.id === id) showDetail.value = false
   } catch (e) {
     message.error((e as Error).message)
   }
@@ -47,6 +48,7 @@ async function handlePromote(id: string) {
   try {
     await api(`/users/${id}/promote`, { method: 'PATCH' })
     message.success('已升级为会员')
+    if (detailUser.value?.id === id) detailUser.value = { ...detailUser.value, role: 'member' }
     fetchUsers()
   } catch (e) {
     message.error((e as Error).message)
@@ -80,49 +82,13 @@ const columns: DataTableColumns<UserRow> = [
   {
     title: '操作',
     key: 'actions',
-    width: 160,
+    width: 100,
     render: (row) =>
-      h('div', { style: 'display:flex; gap:10px; align-items:center;' }, [
-        // 单向升级：仅普通用户可升级为会员；会员显示“已是会员”标签；管理员无操作
-        row.role === 'user'
-          ? h(
-              NPopconfirm,
-              {
-                onPositiveClick: () => handlePromote(row.id),
-                positiveText: '升级',
-                negativeText: '取消',
-              },
-              {
-                trigger: () =>
-                  h(
-                    NButton,
-                    { size: 'small', type: 'primary', text: true },
-                    { default: () => '升级会员' },
-                  ),
-                default: () => '确定将该用户升级为会员？升级后不可撤销。',
-              },
-            )
-          : row.role === 'member'
-            ? h(
-                NTag,
-                { size: 'small', type: 'success', bordered: false },
-                { default: () => '已是会员' },
-              )
-            : null,
-        h(
-          NPopconfirm,
-          {
-            onPositiveClick: () => handleDelete(row.id),
-            positiveText: '删除',
-            negativeText: '取消',
-          },
-          {
-            trigger: () =>
-              h(NButton, { size: 'small', type: 'error', text: true }, { default: () => '删除' }),
-            default: () => '确定删除该用户？',
-          },
-        ),
-      ]),
+      h(
+        NButton,
+        { size: 'small', type: 'primary', text: true, onClick: () => openUserDetail(row) },
+        { default: () => '查看详情' },
+      ),
   },
 ]
 
@@ -133,6 +99,14 @@ const pageSize = 10
 const loading = ref(false)
 const keyword = ref('')
 const searchKeyword = ref('')
+const roleFilter = ref('all')
+
+const roleOptions = [
+  { label: '全部角色', value: 'all' },
+  { label: '普通用户', value: 'user' },
+  { label: '会员用户', value: 'member' },
+  { label: '管理员', value: 'admin' },
+]
 
 async function fetchUsers() {
   loading.value = true
@@ -142,6 +116,7 @@ async function fetchUsers() {
       pageSize: String(pageSize),
     })
     if (searchKeyword.value) params.set('keyword', searchKeyword.value)
+    if (roleFilter.value && roleFilter.value !== 'all') params.set('role', roleFilter.value)
     const res = await api<PageResult>(`/users?${params.toString()}`)
     data.value = res.items
     total.value = res.total
@@ -154,6 +129,27 @@ function handleSearch() {
   page.value = 1
   searchKeyword.value = keyword.value.trim()
   fetchUsers()
+}
+
+function handleRoleChange(value: string) {
+  roleFilter.value = value
+  page.value = 1
+  fetchUsers()
+}
+
+// —— 用户详情弹窗 ——
+const detailUser = ref<UserRow | null>(null)
+const showDetail = ref(false)
+
+function openUserDetail(row: UserRow) {
+  detailUser.value = row
+  showDetail.value = true
+}
+
+function roleTagType(role: string): 'default' | 'success' | 'warning' {
+  if (role === 'admin') return 'warning'
+  if (role === 'member') return 'success'
+  return 'default'
 }
 
 // —— 反馈管理 ——
@@ -618,6 +614,12 @@ onMounted(() => {
                 @keyup.enter="handleSearch"
               />
               <n-button type="primary" @click="handleSearch">搜索</n-button>
+              <n-select
+                v-model:value="roleFilter"
+                :options="roleOptions"
+                style="max-width: 140px"
+                @update:value="handleRoleChange"
+              />
             </div>
             <n-data-table
               :columns="columns"
@@ -639,6 +641,75 @@ onMounted(() => {
               "
             />
           </n-card>
+
+          <!-- 用户详情弹窗 -->
+          <n-modal v-model:show="showDetail" preset="card" title="用户详情" style="width: 440px; max-width: 90vw">
+            <template v-if="detailUser">
+              <n-descriptions :column="1" label-placement="left" bordered size="small">
+                <n-descriptions-item label="ID">{{ detailUser.id }}</n-descriptions-item>
+                <n-descriptions-item label="邮箱">{{ detailUser.email }}</n-descriptions-item>
+                <n-descriptions-item label="昵称">
+                  {{ detailUser.nickname ?? '未设置' }}
+                </n-descriptions-item>
+                <n-descriptions-item label="角色">
+                  <n-tag size="small" :type="roleTagType(detailUser.role)" :bordered="false">
+                    {{ roleLabels[detailUser.role] ?? detailUser.role }}
+                  </n-tag>
+                </n-descriptions-item>
+                <n-descriptions-item label="注册时间">
+                  {{ dayjs(detailUser.createdAt).format('YYYY-MM-DD HH:mm') }}
+                </n-descriptions-item>
+                <n-descriptions-item label="最近登录">
+                  {{
+                    detailUser.lastLoginIp
+                      ? detailUser.lastLoginIp +
+                        (detailUser.lastLoginRegion ? `（${detailUser.lastLoginRegion}）` : '')
+                      : '-'
+                  }}
+                </n-descriptions-item>
+                <n-descriptions-item label="上次活跃">
+                  {{
+                    detailUser.lastActiveAt
+                      ? dayjs(detailUser.lastActiveAt).format('YYYY-MM-DD HH:mm')
+                      : '-'
+                  }}
+                </n-descriptions-item>
+              </n-descriptions>
+              <div
+                style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px"
+              >
+                <template v-if="detailUser.role === 'user'">
+                  <n-popconfirm
+                    positive-text="升级"
+                    negative-text="取消"
+                    @positive-click="handlePromote(detailUser.id)"
+                  >
+                    <template #trigger>
+                      <n-button type="primary">升级会员</n-button>
+                    </template>
+                    确定将该用户升级为会员？升级后不可撤销。
+                  </n-popconfirm>
+                </template>
+                <n-tag
+                  v-else-if="detailUser.role === 'member'"
+                  type="success"
+                  :bordered="false"
+                >
+                  已是会员
+                </n-tag>
+                <n-popconfirm
+                  positive-text="删除"
+                  negative-text="取消"
+                  @positive-click="handleDelete(detailUser.id)"
+                >
+                  <template #trigger>
+                    <n-button type="error">删除用户</n-button>
+                  </template>
+                  确定删除该用户？
+                </n-popconfirm>
+              </div>
+            </template>
+          </n-modal>
         </div>
 
         <!-- 系统设置 -->

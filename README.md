@@ -113,7 +113,7 @@ server/data/ez-english.db (SQLite)
 两个职责独立的 workflow：
 
 - **`ci.yml`（CI · 质量检查）**：push 到 `main` 或 PR 时运行 `scripts/ci.mjs`（依赖校验 → Prettier → 3 包类型检查 → lint → build），任一步失败即失败
-- **`deploy.yml`（CD · 自动部署）**：**PR 合并到 `main`** 后自动执行（也可在 Actions 页手动触发）。构建在 GitHub runner 上完成，直接 rsync 产物到服务器并重启服务——**服务器无需代码仓库 / pnpm / 部署脚本**
+- **`deploy.yml`（CD · 自动部署）**：**push 到 `main` 或 PR 合并到 `main`** 后自动执行（也可在 Actions 页手动触发）。构建在 GitHub runner 上完成，直接 rsync 产物到服务器并重启服务——**服务器无需代码仓库 / pnpm / 部署脚本**
 
 ### 配置自动部署（一次即可）
 
@@ -167,7 +167,7 @@ sudo nginx -t && sudo systemctl reload nginx
 
 ### 部署流程（全自动）
 
-PR 合并到 `main` → GitHub Actions 自动完成：
+push 到 `main` 或 PR 合并到 `main` → GitHub Actions 自动完成：
 
 1. 在 runner 上构建 `shared → client → server`
 2. `pnpm --filter server deploy --prod` 生成后端部署产物（含生产依赖）

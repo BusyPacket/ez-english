@@ -643,7 +643,12 @@ onMounted(() => {
           </n-card>
 
           <!-- 用户详情弹窗 -->
-          <n-modal v-model:show="showDetail" preset="card" title="用户详情" style="width: 440px; max-width: 90vw">
+          <n-modal
+            v-model:show="showDetail"
+            preset="card"
+            title="用户详情"
+            style="width: 440px; max-width: 90vw"
+          >
             <template v-if="detailUser">
               <n-descriptions :column="1" label-placement="left" bordered size="small">
                 <n-descriptions-item label="ID">{{ detailUser.id }}</n-descriptions-item>
@@ -675,9 +680,7 @@ onMounted(() => {
                   }}
                 </n-descriptions-item>
               </n-descriptions>
-              <div
-                style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px"
-              >
+              <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 16px">
                 <template v-if="detailUser.role === 'user'">
                   <n-popconfirm
                     positive-text="升级"
@@ -690,11 +693,7 @@ onMounted(() => {
                     确定将该用户升级为会员？升级后不可撤销。
                   </n-popconfirm>
                 </template>
-                <n-tag
-                  v-else-if="detailUser.role === 'member'"
-                  type="success"
-                  :bordered="false"
-                >
+                <n-tag v-else-if="detailUser.role === 'member'" type="success" :bordered="false">
                   已是会员
                 </n-tag>
                 <n-popconfirm

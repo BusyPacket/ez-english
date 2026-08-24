@@ -33,6 +33,8 @@ if (!skipInstall) {
 }
 steps.push(
   ['Prettier 格式化检查 (format:check)', 'pnpm', ['format:check']],
+  // 必须先构建 shared：前端的 vue-tsc 依赖 @ez-english/shared 的 dist 类型声明（干净环境无残留产物）
+  ['构建 shared（供前端类型解析）', 'pnpm', ['--filter', '@ez-english/shared', 'build']],
   ['类型检查 client (vue-tsc)', 'pnpm', ['--filter', 'client', 'type-check']],
   ['类型检查 server (tsc --noEmit)', 'pnpm', ['--filter', 'server', 'type-check']],
   ['类型检查 shared (tsc --noEmit)', 'pnpm', ['--filter', '@ez-english/shared', 'type-check']],

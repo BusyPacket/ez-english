@@ -55,7 +55,7 @@ pnpm install
 pnpm dev
 # 或分别启动：
 #   pnpm dev:client   → 前端 http://localhost:5173
-#   pnpm dev:server   → 后端 http://localhost:3000/api
+#   pnpm dev:server   → 后端 http://localhost:3001/api
 
 # 3. 构建 / 类型检查
 pnpm build          # 构建所有包
@@ -132,6 +132,12 @@ cat ~/.ssh/deploy_key.pub >> ~/.ssh/authorized_keys
 | `SERVER_HOST`    | 服务器 IP 或域名                                                             |
 | `SERVER_USER`    | 登录用户（如 `root` 或部署专用用户）                                         |
 | `SERVER_PORT`    | SSH 端口（默认 `22`）                                                        |
+
+同时建议在 **Variables**（不是 Secrets）中添加前端 API 地址，构建时注入 `VITE_API_BASE`，**无需 .env 文件**：
+
+| Variable 名     | 值                                                                                                                |
+| --------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `VITE_API_BASE` | 生产建议 `/api`（Nginx 同源反代，自动走后端端口）；如直连后端可填 `http://<域名>:<端口>/api`。未设置时默认 `/api` |
 
 > ⚠️ 部署使用 `sudo rsync` / `sudo systemctl`，登录用户需**免密 sudo** 权限。
 

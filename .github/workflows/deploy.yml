@@ -43,6 +43,10 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: 构建 shared → client → server
+        env:
+          # 前端 API 地址由 GitHub Actions 变量控制（仓库 → Settings → Secrets and variables → Actions → Variables）
+          # 生产建议填 /api（Nginx 同源反代，无需端口）；未设置时默认 /api
+          VITE_API_BASE: ${{ vars.VITE_API_BASE || '/api' }}
         run: |
           pnpm --filter @ez-english/shared build
           pnpm --filter client build

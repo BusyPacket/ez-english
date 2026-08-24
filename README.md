@@ -107,3 +107,72 @@ server/data/ez-english.db (SQLite)
 ```
 
 前端静态数据（考点大纲、真题）暂保留在 `client/src/data/`；学习进度等需要持久化的数据可逐步迁移到后端 API。
+
+## CI 与自动部署（GitHub Actions）
+
+两个职责独立的 workflow：
+
+- **`ci.yml`（CI · 质量检查）**：push 到 `main` 或 PR 时运行 `scripts/ci.mjs`（依赖校验 → Prettier → 3 包类型检查 → lint → build），任一步失败即失败
+- **`deploy.yml`（CD · 自动部署）**：**PR 合并到 `main`** 后自动执行（也可在 Actions 页手动触发）。构建在 GitHub runner 上完成，直接 rsync 产物到服务器并重启服务——**服务器无需代码仓库 / pnpm / 部署脚本**
+
+### 配置自动部署（一次即可）
+
+**1. 服务器端**：生成 SSH 密钥对，把公钥加入登录用户的 `~/.ssh/authorized_keys`
+
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/deploy_key -N "" -C "github-deploy"
+cat ~/.ssh/deploy_key.pub >> ~/.ssh/authorized_keys
+```
+
+**2. GitHub 端**：仓库 → Settings → Secrets and variables → Actions → New repository secret，添加：
+
+| Secret 名        | 值                                                                           |
+| ---------------- | ---------------------------------------------------------------------------- |
+| `SERVER_SSH_KEY` | 服务器上的私钥内容（`deploy_key`，含 `-----BEGIN OPENSSH PRIVATE KEY-----`） |
+| `SERVER_HOST`    | 服务器 IP 或域名                                                             |
+| `SERVER_USER`    | 登录用户（如 `root` 或部署专用用户）                                         |
+| `SERVER_PORT`    | SSH 端口（默认 `22`）                                                        |
+
+> ⚠️ 部署使用 `sudo rsync` / `sudo systemctl`，登录用户需**免密 sudo** 权限。
+
+## 部署（Linux VPS：Nginx + systemd）
+
+前后端分离部署，无需 Docker、无需安装数据库。构建全部由 GitHub Actions 完成，**服务器只需运行环境**：
+
+| 位置                          | 用途                                                |
+| ----------------------------- | --------------------------------------------------- |
+| `/var/www/ez-english/dist`    | 前端静态文件（Nginx root，`client` 构建产物）       |
+| `/opt/ez-english/server`      | 后端运行目录（`server` 构建产物，systemd 工作目录） |
+| `/opt/ez-english/server/data` | SQLite 数据库（持久化，部署时受保护不清空）         |
+
+### 服务器一次性初始化
+
+```bash
+# 1. 安装环境（只需运行 Node、nginx、rsync；无需 pnpm / 代码仓库）
+curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs
+sudo apt install -y nginx rsync
+
+# 2. 安装 systemd 服务（deploy/ez-english.service）
+sudo cp deploy/ez-english.service /etc/systemd/system/
+sudo systemctl daemon-reload
+sudo systemctl enable --now ez-english
+
+# 3. 安装 Nginx 站点（deploy/nginx.conf）
+sudo cp deploy/nginx.conf /etc/nginx/sites-available/ez-english
+sudo ln -s /etc/nginx/sites-available/ez-english /etc/nginx/sites-enabled/
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+> `deploy/ez-english.service` 与 `deploy/nginx.conf` 按需修改（目录、端口、域名）。部署相关文件均位于 `deploy/`。
+
+### 部署流程（全自动）
+
+PR 合并到 `main` → GitHub Actions 自动完成：
+
+1. 在 runner 上构建 `shared → client → server`
+2. `pnpm --filter server deploy --prod` 生成后端部署产物（含生产依赖）
+3. rsync 前端到 `/var/www/ez-english/dist`
+4. rsync 后端到 `/opt/ez-english/server`（`--exclude data` 保护数据库）
+5. SSH 重启 systemd 服务 + 重载 Nginx
+
+无需在服务器上拉代码、装 pnpm 或执行任何脚本；也可在 Actions 页手动触发部署。

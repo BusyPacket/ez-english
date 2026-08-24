@@ -1,0 +1,25 @@
+# ez-english 后端 systemd 服务单元
+# 安装：sudo cp deploy/ez-english.service /etc/systemd/system/
+#        sudo systemctl daemon-reload
+#        sudo systemctl enable --now ez-english
+# 说明：WorkingDirectory 指向后端部署目录（由 GitHub Actions deploy.yml rsync 部署产物）
+[Unit]
+Description=ez-english API server (NestJS + SQLite)
+After=network.target
+
+[Service]
+Type=simple
+# 后端部署目录（GitHub Actions 部署产物，含 dist、drizzle、node_modules、data）
+WorkingDirectory=/opt/ez-english/server
+ExecStart=/usr/bin/env node dist/main
+Restart=on-failure
+RestartSec=3
+Environment=NODE_ENV=production
+# 后端端口（与 deploy/nginx.conf 的 proxy_pass 保持一致）
+Environment=PORT=3000
+# 如需以非 root 运行，取消下面注释，并确保该用户可写 data 目录（SQLite）：
+# User=www-data
+# Group=www-data
+
+[Install]
+WantedBy=multi-user.target

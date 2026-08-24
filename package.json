@@ -1,6 +1,6 @@
 {
   "name": "ez-english",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "pnpm -r --parallel run dev",
@@ -12,7 +12,8 @@
     "format": "pnpm -r run format",
     "format:check": "pnpm -r run format:check",
     "check": "node scripts/ci.mjs",
-    "check:quick": "node scripts/ci.mjs --skip-install"
+    "check:quick": "node scripts/ci.mjs --skip-install",
+    "set-version": "node scripts/set-version.mjs"
   },
   "pnpm": {
     "overrides": {

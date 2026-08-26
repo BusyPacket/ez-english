@@ -30,6 +30,8 @@ const generating = ref(false)
 const generated = ref<AnswerableQuestion | null>(null)
 /** 已生成题目对应的题型（生成时锁定） */
 const generatedType = ref<'single' | 'fill' | 'judge'>('single')
+/** 本次会话已生成过的题干（传给后端去重，避免连续生成重复题） */
+const generatedStems = ref<string[]>([])
 
 /** 生成按钮文案：生成中 → 生成中；已生成过 → 再来一题；否则 → 生成题目 */
 const generateBtnText = computed(() => {
@@ -53,9 +55,14 @@ async function generateQuestion() {
   try {
     generated.value = await api<AnswerableQuestion>('/ai/generate-practice', {
       method: 'POST',
-      body: JSON.stringify({ point: pointId.value, type: questionType.value }),
+      body: JSON.stringify({
+        point: pointId.value,
+        type: questionType.value,
+        excludeStems: generatedStems.value,
+      }),
     })
     generatedType.value = questionType.value // 锁定当前题目题型
+    if (generated.value?.stem) generatedStems.value.push(generated.value.stem)
     message.success('已生成题目')
   } catch (e) {
     message.error((e as Error).message)

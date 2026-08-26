@@ -19,10 +19,11 @@ export const generateQuestionSchema = z.object({
 
 export type GenerateQuestionDto = z.infer<typeof generateQuestionSchema>
 
-/** 练习生成请求体：考点 + 题型 */
+/** 练习生成请求体：考点 + 题型（可选：本次会话已生成过的题干，用于去重） */
 export const generatePracticeSchema = z.object({
   point: z.string().min(1),
   type: z.enum(['single', 'fill', 'judge']),
+  excludeStems: z.array(z.string()).optional(),
 })
 
 export type GeneratePracticeDto = z.infer<typeof generatePracticeSchema>

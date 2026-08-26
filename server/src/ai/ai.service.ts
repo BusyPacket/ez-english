@@ -1,6 +1,7 @@
 import { ForbiddenException, Injectable, InternalServerErrorException } from '@nestjs/common'
 import { DeepSeekClient, type ChatMessage } from './deepseek'
 import { ProfileService } from '../users/profile.service'
+import { QuestionsService } from '../questions/questions.service'
 import { UserService } from '../users/user.service'
 import {
   GENERATE_QUESTION_SYSTEM_PROMPT,
@@ -27,6 +28,7 @@ export class AiService {
     private readonly deepseek: DeepSeekClient,
     private readonly profileService: ProfileService,
     private readonly userService: UserService,
+    private readonly questionsService: QuestionsService,
   ) {}
 
   /** 试用期检查：普通用户试用期已到则禁止使用 AI（会员/管理员豁免） */
@@ -57,23 +59,95 @@ export class AiService {
     return result.data
   }
 
-  /** 按考点与题型生成一道练习例题 */
+  /** 按考点与题型生成一道练习例题（带去重：提示已有题 + 相似度校验 + 有限重试） */
   async generatePractice(userId: string, dto: GeneratePracticeDto): Promise<GeneratedQuestion> {
     await this.assertTrialAvailable(userId)
     const { apiKey, model } = await this.profileService.getChatConfig(userId)
     await this.profileService.assertSufficientBalance(userId, MIN_BALANCE)
 
     const typeLabel = { single: '单选题', fill: '填空题', judge: '判断题' }[dto.type]
-    const raw = await this.deepseek.chat(apiKey, model, [
-      { role: 'system', content: generatePracticeSystemPrompt(dto.point, typeLabel) },
-    ])
 
-    const question = this.parseJson(raw)
-    const result = generatedQuestionSchema.safeParse(question)
-    if (!result.success) {
-      throw new InternalServerErrorException('AI 返回的题目格式不符合预期')
+    // 去重源：题库里该考点已有的题干（最近 20 条）+ 前端传入的本次会话已生成题干
+    const existing: string[] = []
+    try {
+      const bank = await this.questionsService.list(dto.point, 30)
+      for (const q of bank) {
+        if (q.stem && existing.length < 20) existing.push(q.stem)
+      }
+    } catch {
+      // 题库查询失败不阻塞生成
     }
-    return result.data
+    if (dto.excludeStems) {
+      for (const s of dto.excludeStems) {
+        const t = s?.trim()
+        if (t && !existing.includes(t) && existing.length < 30) existing.push(t)
+      }
+    }
+
+    // 有限重试：最多生成 MAX_RETRY + 1 次；命中重复则把该题干加入排除列表后重新出题
+    const MAX_RETRY = 2
+    let lastQuestion: GeneratedQuestion | null = null
+    for (let attempt = 0; attempt <= MAX_RETRY; attempt++) {
+      const raw = await this.deepseek.chat(apiKey, model, [
+        {
+          role: 'system',
+          content: generatePracticeSystemPrompt(dto.point, typeLabel, existing),
+        },
+      ])
+      const question = this.parseJson(raw)
+      const result = generatedQuestionSchema.safeParse(question)
+      if (!result.success) {
+        if (attempt < MAX_RETRY) continue
+        throw new InternalServerErrorException('AI 返回的题目格式不符合预期')
+      }
+      lastQuestion = result.data
+      if (!this.isDuplicateStem(lastQuestion.stem, existing)) {
+        return lastQuestion
+      }
+      existing.push(lastQuestion.stem)
+    }
+    // 重试耗尽仍重复：返回最后一道，避免无谓报错（prompt 已尽量规避）
+    return lastQuestion as GeneratedQuestion
+  }
+
+  /** 题干是否与已有题重复：归一化后完全相等或 Levenshtein 相似度 ≥ 阈值 */
+  private isDuplicateStem(stem: string, existing: string[]): boolean {
+    const norm = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/[\s_＿—\-－~～，。！？、,.;:!?()（）【】\[\]“”"''“”]/g, '')
+    const target = norm(stem)
+    if (!target) return false
+    for (const e of existing) {
+      const en = norm(e)
+      if (!en) continue
+      if (en === target) return true
+      if (target.length * en.length > 20000) continue // 超长跳过相似度，避免开销
+      if (this.levenshteinRatio(target, en) >= 0.85) return true
+    }
+    return false
+  }
+
+  /** 归一化字符串的 Levenshtein 相似度（1 - 编辑距离/较长串长度） */
+  private levenshteinRatio(a: string, b: string): number {
+    if (a.length < b.length) {
+      const t = a
+      a = b
+      b = t
+    }
+    let prev = Array.from({ length: b.length + 1 }, (_, j) => j)
+    let curr = new Array<number>(b.length + 1)
+    for (let i = 1; i <= a.length; i++) {
+      curr[0] = i
+      for (let j = 1; j <= b.length; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1
+        curr[j] = Math.min(prev[j] + 1, curr[j - 1] + 1, prev[j - 1] + cost)
+      }
+      const t = prev
+      prev = curr
+      curr = t
+    }
+    return 1 - prev[b.length] / Math.max(a.length, b.length)
   }
 
   /** 追问：携带此前多轮上下文，回答用户新问题 */

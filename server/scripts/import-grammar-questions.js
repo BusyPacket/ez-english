@@ -32,6 +32,17 @@ for (const f of files) {
     if (type === 'single') {
       if (ch.length < 2) problems.push('single 缺选项')
       if (!/^[A-D]$/.test(String(q.answer).trim())) problems.push(`answer 非法(${q.answer})`)
+      // 源数据质量校验：解析结论字母必须与 answer 一致。
+      // 若 AI 生成时把「答案」与「解析结论」写岔，会在后续均匀化时被放大成
+      // answer 与解析不一致，故此处直接判为校验失败（阻止导入并列出）。
+      if (q.analysis) {
+        const conclusion = String(q.analysis).match(
+          /(?:故选|答案选|应选|所以选|因此选|选)\s*[（(]?\s*([A-D])\s*[)）]?/,
+        )
+        if (conclusion && conclusion[1] !== String(q.answer).trim().toUpperCase()) {
+          problems.push(`解析结论(${conclusion[1]})与 answer(${q.answer})不一致`)
+        }
+      }
     } else if (type === 'judge') {
       if (!['正确', '错误'].includes(String(q.answer).trim()))
         problems.push(`judge answer 非法(${q.answer})`)
@@ -42,6 +53,8 @@ for (const f of files) {
     }
     // 均匀化答案分布：按文件内序号轮转目标位置，重排选项并同步答案字母
     // （修复部分文件生成时答案集中在 A 的问题，避免学习者猜 A）
+    // ⚠️ 重排必须同步映射 analysis 中指向旧选项位置的字母引用（A-D）：
+    // 此前版本只更新 answer/choices，导致「answer 与解析结论」大面积不一致。
     if (type === 'single' && ch.length >= 2) {
       const target = idx % 4
       idx += 1
@@ -49,12 +62,26 @@ for (const f of files) {
       const correct = correctIdx >= 0 ? ch[correctIdx] : ch[0]
       const rest = ch.filter((_, i) => i !== correctIdx)
       const newCh = []
+      const oldToNew = new Array(4) // 旧选项位置(0-3) -> 新选项位置(0-3)
       for (let i = 0; i < 4; i++) {
-        if (i === target) newCh.push(correct)
-        else newCh.push(rest.shift())
+        if (i === target) {
+          newCh.push(correct)
+          oldToNew[correctIdx] = i
+        } else {
+          const item = rest.shift()
+          newCh.push(item)
+          oldToNew[ch.indexOf(item)] = i
+        }
       }
       q.answer = 'ABCD'[target]
       q.choices = newCh
+      // 同步把 analysis 中所有选项字母引用（A-D）映射到新位置
+      if (q.analysis) {
+        q.analysis = String(q.analysis).replace(/[A-D]/g, (letter) => {
+          const from = 'ABCD'.indexOf(letter)
+          return 'ABCD'[oldToNew[from]]
+        })
+      }
     } else {
       q.choices = ch
     }

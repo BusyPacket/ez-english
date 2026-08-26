@@ -7,6 +7,10 @@
 
 ## [Unreleased]
 
+### Features
+
+- 支持鼠标中键导航栏按钮
+
 ### Refactors
 
 - 调整排行榜按钮顺序和默认值

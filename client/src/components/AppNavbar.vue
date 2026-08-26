@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue'
+import { computed, h, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useThemeStore } from '@/stores/theme'
 import { useUserStore } from '@/stores/user'
@@ -44,6 +44,30 @@ function handleMenuSelect(key: string) {
   showMobileMenu.value = false
   router.push(key)
 }
+
+/**
+ * 菜单项渲染为真实 <a href> 链接：
+ * 左键阻止默认跳转（交给 n-menu 的 update:value → router.push 做 SPA 导航）；
+ * 中键（auxclick）不受 preventDefault 影响，由浏览器新开标签页访问对应路由。
+ */
+const renderMenuLink = (option: {
+  key?: string | number
+  label?: string | (() => import('vue').VNodeChild)
+}) =>
+  h(
+    'a',
+    {
+      href: String(option.key ?? ''),
+      class: 'nav-menu-link',
+      onClick: (e: MouseEvent) => e.preventDefault(),
+    },
+    {
+      default: () =>
+        typeof option.label === 'function'
+          ? option.label()
+          : (option.label ?? String(option.key ?? '')),
+    },
+  )
 </script>
 
 <template>
@@ -55,6 +79,7 @@ function handleMenuSelect(key: string) {
         mode="horizontal"
         :options="mainMenuOptions"
         :value="activeKey"
+        :render-label="renderMenuLink"
         @update:value="handleMenuSelect"
       />
       <div class="spacer" />
@@ -64,6 +89,7 @@ function handleMenuSelect(key: string) {
         mode="horizontal"
         :options="adminMenuOptions"
         :value="activeKey"
+        :render-label="renderMenuLink"
         @update:value="handleMenuSelect"
       />
       <n-space v-if="userStore.isLoggedIn" align="center">
@@ -143,6 +169,14 @@ function handleMenuSelect(key: string) {
   margin-top: 8px;
   align-content: center;
   align-items: center;
+}
+
+/* 菜单项作为真实链接的样式：去掉 <a> 默认蓝色下划线，继承菜单文字颜色 */
+.nav-menu :deep(.nav-menu-link),
+.nav-menu-right :deep(.nav-menu-link) {
+  text-decoration: none;
+  color: inherit;
+  outline: none;
 }
 
 .theme-icon {

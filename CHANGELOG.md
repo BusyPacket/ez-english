@@ -7,6 +7,10 @@
 
 ## [Unreleased]
 
+### Refactors
+
+- 调整排行榜按钮顺序和默认值
+
 ### Bug Fixes
 
 - 修复 AI 生题会生成重复题目的问题

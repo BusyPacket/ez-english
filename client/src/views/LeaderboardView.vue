@@ -29,11 +29,11 @@ const list = ref<LeaderboardRow[]>([])
 const loading = ref(false)
 const error = ref('')
 
-/** 排行方式：progress 按已掌握考点数；answer 按答题数 */
-const mode = ref<'progress' | 'answer'>('progress')
+/** 排行方式：progress 按已掌握考点数；answer 按答题数（默认答题数） */
+const mode = ref<'progress' | 'answer'>('answer')
 const modeOptions = [
-  { label: '按掌握', value: 'progress' },
-  { label: '按答题数', value: 'answer' },
+  { label: '答题数', value: 'answer' },
+  { label: '掌握度', value: 'progress' },
 ]
 
 const medalIcons: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
@@ -137,13 +137,7 @@ onMounted(fetchLeaderboard)
       <n-alert v-if="error" type="error" :title="error" />
       <n-spin :show="loading">
         <n-empty v-if="!loading && list.length === 0" description="暂时还没有学习用户" />
-        <n-data-table
-          v-else
-          :columns="columns"
-          :data="list"
-          :bordered="false"
-          :row-key="(row) => row.userId"
-        />
+        <n-data-table v-else :columns="columns" :data="list" :bordered="false" :row-key="(row) => row.userId" />
       </n-spin>
     </n-card>
   </div>

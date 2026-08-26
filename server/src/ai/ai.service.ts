@@ -113,9 +113,7 @@ export class AiService {
   /** 题干是否与已有题重复：归一化后完全相等或 Levenshtein 相似度 ≥ 阈值 */
   private isDuplicateStem(stem: string, existing: string[]): boolean {
     const norm = (s: string) =>
-      s
-        .toLowerCase()
-        .replace(/[\s_＿—\-－~～，。！？、,.;:!?()（）【】\[\]“”"''“”]/g, '')
+      s.toLowerCase().replace(/[\s_＿—\-－~～，。！？、,.;:!?()（）【】[\]“”"''“”]/g, '')
     const target = norm(stem)
     if (!target) return false
     for (const e of existing) {
@@ -136,7 +134,7 @@ export class AiService {
       b = t
     }
     let prev = Array.from({ length: b.length + 1 }, (_, j) => j)
-    let curr = new Array<number>(b.length + 1)
+    let curr = Array.from<number>({ length: b.length + 1 })
     for (let i = 1; i <= a.length; i++) {
       curr[0] = i
       for (let j = 1; j <= b.length; j++) {

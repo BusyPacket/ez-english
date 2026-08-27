@@ -201,6 +201,7 @@ export class QuestionsService {
         pointId: dto.pointId,
         pointTitle: dto.pointTitle,
         type: dto.type,
+        stem: dto.stem,
         // 仅单选题存选项；填空/判断题一律清空为 []（避免切换题型后残留旧选项）
         choices: dto.type === 'single' && dto.choices?.length ? JSON.stringify(dto.choices) : '[]',
         answer: dto.answer,

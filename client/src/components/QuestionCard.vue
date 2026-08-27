@@ -108,7 +108,7 @@ function submitAnswer() {
   isCorrect.value = correct
   submitted.value = true
   // 上报答题数（后台统计，失败不影响答题体验）
-  void api('/profile/answer', { method: 'POST' }).catch(() => { })
+  void api('/profile/answer', { method: 'POST' }).catch(() => {})
   // 例题库题目（有 id）：记录用户答案/选项 + 判分，成功后再通知父组件刷新「已答」排序
   const questionId = q.id
   if (questionId) {
@@ -122,7 +122,7 @@ function submitAnswer() {
       }),
     })
       .then(() => emit('answered', questionId, userAnswer, correct))
-      .catch(() => { })
+      .catch(() => {})
   }
 }
 
@@ -239,52 +239,85 @@ watch(
 
 <template>
   <div v-if="question" class="question-card">
-    <div v-if="question.answered" class="answered-badge">
-      <span class="answered-dot" />已答题
-    </div>
+    <div v-if="question.answered" class="answered-badge"><span class="answered-dot" />已答题</div>
     <div class="gen-stem">{{ question.stem }}</div>
 
     <!-- 单选题：可点击选项（用 .length 判断，避免空数组 [] 误入此分支） -->
     <div v-if="question.choices?.length" class="gen-choices">
-      <div v-for="(choice, i) in question.choices" :key="i" class="choice" :class="{
-        selected: selectedChoice === i,
-        'correct-choice': submitted && isChoiceCorrect(i),
-        'wrong-choice': submitted && selectedChoice === i && !isChoiceCorrect(i),
-      }" @click="pickChoice(i)">
+      <div
+        v-for="(choice, i) in question.choices"
+        :key="i"
+        class="choice"
+        :class="{
+          selected: selectedChoice === i,
+          'correct-choice': submitted && isChoiceCorrect(i),
+          'wrong-choice': submitted && selectedChoice === i && !isChoiceCorrect(i),
+        }"
+        @click="pickChoice(i)"
+      >
         <span class="opt-letter">{{ optionLetters[i] }}</span>
         {{ choice }}
         <span v-if="!submitted && selectedChoice === i" class="choice-selected-mark">✓</span>
         <span v-if="submitted && isChoiceCorrect(i)" class="choice-tag tag-correct">
           {{ selectedChoice === i ? '✓ 正确' : '✓ 正确答案' }}
         </span>
-        <span v-else-if="submitted && selectedChoice === i" class="choice-tag tag-wrong">✗ 你的选择</span>
+        <span v-else-if="submitted && selectedChoice === i" class="choice-tag tag-wrong"
+          >✗ 你的选择</span
+        >
       </div>
     </div>
 
     <!-- 判断题 -->
     <div v-else-if="questionType === 'judge'" class="judge-row">
-      <n-button size="small" :type="judgeChoice === '正确' ? 'primary' : 'default'" :disabled="submitted"
-        @click="judgeChoice = '正确'">正确</n-button>
-      <n-button size="small" :type="judgeChoice === '错误' ? 'primary' : 'default'" :disabled="submitted"
-        @click="judgeChoice = '错误'">错误</n-button>
+      <n-button
+        size="small"
+        :type="judgeChoice === '正确' ? 'primary' : 'default'"
+        :disabled="submitted"
+        @click="judgeChoice = '正确'"
+        >正确</n-button
+      >
+      <n-button
+        size="small"
+        :type="judgeChoice === '错误' ? 'primary' : 'default'"
+        :disabled="submitted"
+        @click="judgeChoice = '错误'"
+        >错误</n-button
+      >
     </div>
 
     <!-- 填空题 -->
     <div v-else class="fill-row">
-      <n-input v-model:value="fillInput" size="small" placeholder="请输入答案" style="max-width: 320px" :disabled="submitted"
-        @keyup.enter="submitAnswer" />
+      <n-input
+        v-model:value="fillInput"
+        size="small"
+        placeholder="请输入答案"
+        style="max-width: 320px"
+        :disabled="submitted"
+        @keyup.enter="submitAnswer"
+      />
     </div>
 
     <div class="gen-actions">
-      <n-button size="small" :loading="favoriting" :type="favoriteId ? 'warning' : 'default'" @click="toggleFavorite">
+      <n-button
+        size="small"
+        :loading="favoriting"
+        :type="favoriteId ? 'warning' : 'default'"
+        @click="toggleFavorite"
+      >
         {{ favoriteId ? '★ 已收藏' : '☆ 收藏' }}
       </n-button>
-      <n-button v-if="!submitted" size="small" type="primary" @click="submitAnswer">提交答案</n-button>
+      <n-button v-if="!submitted" size="small" type="primary" @click="submitAnswer"
+        >提交答案</n-button
+      >
       <n-button v-else size="small" @click="resetAnswer">重新作答</n-button>
     </div>
 
     <!-- 提交后判分结果 -->
-    <div v-if="submitted" class="gen-result" :class="isCorrect ? 'gen-result-ok' : 'gen-result-err'">
+    <div
+      v-if="submitted"
+      class="gen-result"
+      :class="isCorrect ? 'gen-result-ok' : 'gen-result-err'"
+    >
       {{ isCorrect ? '✅ 回答正确' : `❌ 回答错误，正确答案：${question.answer}` }}
     </div>
 
@@ -293,6 +326,9 @@ watch(
       <div v-if="question.point" class="gen-point">考点：{{ question.point }}</div>
       <div v-if="question.analysis" class="gen-analysis">解析：{{ question.analysis }}</div>
     </template>
+
+    <!-- 插槽：父组件可在「追问」上方插入内容（如例题库的上一题/下一题导航） -->
+    <slot name="before-followup" />
 
     <!-- 追问 -->
     <div class="followup-block">
@@ -307,8 +343,13 @@ watch(
         </div>
       </div>
       <div class="followup-row">
-        <n-input v-model:value="followUpInput" size="small" placeholder="输入问题，追问这道题…" :disabled="followUpAsking"
-          @keyup.enter="askFollowUp" />
+        <n-input
+          v-model:value="followUpInput"
+          size="small"
+          placeholder="输入问题，追问这道题…"
+          :disabled="followUpAsking"
+          @keyup.enter="askFollowUp"
+        />
         <n-button size="small" :loading="followUpAsking" @click="askFollowUp">追问</n-button>
       </div>
     </div>

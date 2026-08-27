@@ -186,20 +186,38 @@ onMounted(() => {
 
     <!-- 例题库（可折叠，位于考点最上方，上一题/下一题浏览） -->
     <n-collapse v-model:expanded-names="bankExpanded" class="bank-collapse">
-      <n-collapse-item name="bank" :title="`📚 例题库${bankQuestions.length ? `（${bankQuestions.length} 题）` : ''}`">
+      <n-collapse-item
+        name="bank"
+        :title="`📚 例题库${bankQuestions.length ? `（${bankQuestions.length} 题）` : ''}`"
+      >
         <div v-if="bankLoading" class="bank-loading">
           <n-spin size="small" />
         </div>
         <template v-else-if="bankQuestions.length">
-          <div class="bank-nav">
-            <n-button size="small" :disabled="bankIndex <= 0" @click="prevBank">上一题</n-button>
-            <span class="bank-count">{{ bankIndex + 1 }} / {{ bankQuestions.length }}</span>
-            <n-button size="small" :disabled="bankIndex >= bankQuestions.length - 1" @click="nextBank">下一题
-            </n-button>
-          </div>
-          <n-divider style="margin: 10px 0" />
-          <QuestionCard :question="bankCurrent" :question-type="bankType" :point-id="pointId"
-            :point-title="practiceTitle" @answered="handleBankAnswered" />
+          <QuestionCard
+            :question="bankCurrent"
+            :question-type="bankType"
+            :point-id="pointId"
+            :point-title="practiceTitle"
+            @answered="handleBankAnswered"
+          >
+            <!-- 上一题/下一题导航放在「追问」上方 -->
+            <template #before-followup>
+              <n-divider style="margin: 10px 0" />
+              <div class="bank-nav">
+                <n-button size="small" :disabled="bankIndex <= 0" @click="prevBank"
+                  >上一题</n-button
+                >
+                <span class="bank-count">{{ bankIndex + 1 }} / {{ bankQuestions.length }}</span>
+                <n-button
+                  size="small"
+                  :disabled="bankIndex >= bankQuestions.length - 1"
+                  @click="nextBank"
+                  >下一题
+                </n-button>
+              </div>
+            </template>
+          </QuestionCard>
         </template>
         <div v-else class="bank-empty">该考点暂无例题</div>
       </n-collapse-item>
@@ -225,8 +243,12 @@ onMounted(() => {
         </n-card>
 
         <n-card v-if="generated" class="generated-card" size="small">
-          <QuestionCard :question="generated" :question-type="generatedType" :point-id="pointId"
-            :point-title="practiceTitle" />
+          <QuestionCard
+            :question="generated"
+            :question-type="generatedType"
+            :point-id="pointId"
+            :point-title="practiceTitle"
+          />
         </n-card>
       </n-collapse-item>
     </n-collapse>

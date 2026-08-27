@@ -1,9 +1,9 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
 import { randomUUID } from 'node:crypto'
-import { and, desc, eq, like, or, sql, type SQL } from 'drizzle-orm'
+import { and, desc, eq, inArray, like, or, sql, type SQL } from 'drizzle-orm'
 import { db, schema } from '../database/database'
 import type { Question } from '../database/schema'
-import type { CreateQuestionDto, UpdateQuestionDto } from './questions.schema'
+import type { CreateQuestionDto, RecordAnswerDto, UpdateQuestionDto } from './questions.schema'
 
 /** 数据库行 → API 响应（choices 反序列化为数组） */
 function mapRow(row: Question) {
@@ -22,19 +22,87 @@ function mapRow(row: Question) {
 
 @Injectable()
 export class QuestionsService {
-  /** 例题列表；可按考点过滤、限制数量（默认全部，按创建时间倒序） */
-  async list(pointId?: string, limit?: number) {
-    const base = pointId
-      ? db
+  /**
+   * 例题列表；可按考点过滤、限制数量。
+   * 默认全部，按「未答题在前、已答题在后」排序（组内按创建时间倒序），
+   * 并附带当前用户的答题状态（answered / userAnswer / isCorrect）。
+   */
+  async list(userId: string, pointId?: string, limit?: number) {
+    const rows = pointId
+      ? await db
           .select()
           .from(schema.questions)
           .where(eq(schema.questions.pointId, pointId))
           .orderBy(desc(schema.questions.createdAt))
-      : db.select().from(schema.questions).orderBy(desc(schema.questions.createdAt))
+          .all()
+      : await db.select().from(schema.questions).orderBy(desc(schema.questions.createdAt)).all()
 
     const size = Math.max(0, Math.min(limit ?? 100, 100))
-    const rows = await base.limit(size).all()
-    return rows.map(mapRow)
+    const sliced = rows.slice(0, size)
+
+    // 联查当前用户的答题记录（仅涉及本批题目，避免全表扫描）；userId 为空（如 AI 去重场景）则跳过
+    const answerMap = new Map<string, { userAnswer: string; isCorrect: number }>()
+    if (userId && sliced.length) {
+      const answers = await db
+        .select({
+          questionId: schema.questionAnswers.questionId,
+          userAnswer: schema.questionAnswers.userAnswer,
+          isCorrect: schema.questionAnswers.isCorrect,
+        })
+        .from(schema.questionAnswers)
+        .where(
+          and(
+            eq(schema.questionAnswers.userId, userId),
+            inArray(
+              schema.questionAnswers.questionId,
+              sliced.map((q) => q.id),
+            ),
+          ),
+        )
+        .all()
+      for (const a of answers) answerMap.set(a.questionId, a)
+    }
+
+    const items = sliced.map((row) => {
+      const answer = answerMap.get(row.id)
+      return {
+        ...mapRow(row),
+        answered: Boolean(answer),
+        userAnswer: answer?.userAnswer ?? null,
+        isCorrect: answer ? answer.isCorrect === 1 : null,
+      }
+    })
+
+    // 未答在前、已答在后（保持各分组内创建时间倒序）
+    items.sort((a, b) => Number(a.answered) - Number(b.answered))
+    return items
+  }
+
+  /** 记录一次答题（upsert：同一用户同一题仅保留一条，重复作答更新答案与判分） */
+  async recordAnswer(userId: string, dto: RecordAnswerDto) {
+    const answeredAt = new Date().toISOString()
+    await db
+      .insert(schema.questionAnswers)
+      .values({
+        id: randomUUID(),
+        userId,
+        questionId: dto.questionId,
+        type: dto.type,
+        userAnswer: dto.userAnswer,
+        isCorrect: dto.isCorrect ? 1 : 0,
+        answeredAt,
+      })
+      .onConflictDoUpdate({
+        target: [schema.questionAnswers.userId, schema.questionAnswers.questionId],
+        set: {
+          type: dto.type,
+          userAnswer: dto.userAnswer,
+          isCorrect: dto.isCorrect ? 1 : 0,
+          answeredAt,
+        },
+      })
+      .run()
+    return { questionId: dto.questionId, answered: true }
   }
 
   /** 随机抽取 N 道题（供练习抽题，可限定考点） */

@@ -70,7 +70,7 @@ export class AiService {
     // 去重源：题库里该考点已有的题干（最近 20 条）+ 前端传入的本次会话已生成题干
     const existing: string[] = []
     try {
-      const bank = await this.questionsService.list(dto.point, 30)
+      const bank = await this.questionsService.list('', dto.point, 30)
       for (const q of bank) {
         if (q.stem && existing.length < 20) existing.push(q.stem)
       }

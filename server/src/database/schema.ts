@@ -1,4 +1,4 @@
-import { integer, primaryKey, sqliteTable, text } from 'drizzle-orm/sqlite-core'
+import { integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 // 用户表（Drizzle schema，单一权威定义）
 export const users = sqliteTable('users', {
@@ -114,6 +114,29 @@ export const questions = sqliteTable('questions', {
   createdAt: text('created_at').notNull(),
 })
 
+// 答题记录表（每用户每题一条：记录用户选择的答案/选项 + 判分，供例题库已答标记与排序）
+export const questionAnswers = sqliteTable(
+  'question_answers',
+  {
+    // 主键：UUID（由应用生成，node:crypto randomUUID）
+    id: text('id').primaryKey(),
+    // 答题用户 id（关联 users.id）
+    userId: text('user_id').notNull(),
+    // 题目 id（关联 questions.id）
+    questionId: text('question_id').notNull(),
+    // 题型：single 单选 / fill 填空 / judge 判断
+    type: text('type').notNull().default('single'),
+    // 用户选择的答案：单选为选项字母（如 A），判断为「正确/错误」，填空为用户输入文本
+    userAnswer: text('user_answer').notNull(),
+    // 是否正确：0 否 / 1 是
+    isCorrect: integer('is_correct').notNull().default(0),
+    // 答题时间：带时区的 UTC 时间（ISO 8601）
+    answeredAt: text('answered_at').notNull(),
+  },
+  // 同一用户对同一道题只保留一条记录（重复作答时更新，避免历史堆积）
+  (table) => [uniqueIndex('question_answers_user_question_uk').on(table.userId, table.questionId)],
+)
+
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Progress = typeof progress.$inferSelect
@@ -128,3 +151,5 @@ export type Favorite = typeof favorites.$inferSelect
 export type NewFavorite = typeof favorites.$inferInsert
 export type Question = typeof questions.$inferSelect
 export type NewQuestion = typeof questions.$inferInsert
+export type QuestionAnswer = typeof questionAnswers.$inferSelect
+export type NewQuestionAnswer = typeof questionAnswers.$inferInsert

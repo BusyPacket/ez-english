@@ -1,4 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common'
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  Req,
+  UseGuards,
+} from '@nestjs/common'
 import { JwtAuthGuard } from '../common/jwt-auth.guard'
 import { RolesGuard } from '../common/roles.guard'
 import { Roles } from '../common/roles.decorator'
@@ -6,11 +17,17 @@ import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import { UserRole } from '../users/user.schema'
 import {
   createQuestionSchema,
+  recordAnswerSchema,
   updateQuestionSchema,
   type CreateQuestionDto,
+  type RecordAnswerDto,
   type UpdateQuestionDto,
 } from './questions.schema'
 import { QuestionsService } from './questions.service'
+
+interface AuthedRequest {
+  user: { sub: string }
+}
 
 @Controller('questions')
 @UseGuards(JwtAuthGuard)
@@ -41,10 +58,19 @@ export class QuestionsController {
     )
   }
 
-  /** 按考点返回全部例题（练习页例题库浏览，登录即可，有序） */
+  /** 按考点返回全部例题（练习页例题库浏览；未答在前、已答在后，附带已答状态） */
   @Get('by-point')
-  byPoint(@Query('pointId') pointId?: string) {
-    return this.questionsService.list(pointId || undefined)
+  byPoint(@Query('pointId') pointId?: string, @Req() request?: AuthedRequest) {
+    return this.questionsService.list(request?.user.sub ?? '', pointId || undefined)
+  }
+
+  /** 记录答题（用户作答例题库题目；upsert，同一题重复作答更新答案） */
+  @Post('answers')
+  recordAnswer(
+    @Body(new ZodValidationPipe(recordAnswerSchema)) dto: RecordAnswerDto,
+    @Req() request: AuthedRequest,
+  ) {
+    return this.questionsService.recordAnswer(request.user.sub, dto)
   }
 
   /** 新增例题（admin 添加） */

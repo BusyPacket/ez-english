@@ -78,6 +78,13 @@
       "when": 1787152430318,
       "tag": "0010_damp_wildside",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "6",
+      "when": 1787827837359,
+      "tag": "0011_lazy_thunderbird",
+      "breakpoints": true
     }
   ]
 }

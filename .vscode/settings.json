@@ -11,5 +11,8 @@
   "editor.formatOnSave": true,
   "editor.defaultFormatter": "esbenp.prettier-vscode",
   "prettier.prettierPath": "./node_modules/prettier",
-  "js/ts.tsdk.path": "./server/node_modules/typescript/lib"
+  "js/ts.tsdk.path": "./server/node_modules/typescript/lib",
+  "chat.tools.terminal.autoApprove": {
+    "/^pnpm\\b/": true
+  }
 }

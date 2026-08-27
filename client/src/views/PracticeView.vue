@@ -82,6 +82,12 @@ interface BankQuestion {
   answer: string
   analysis: string | null
   createdAt: string
+  /** 是否已答题（后端按用户附带） */
+  answered: boolean
+  /** 用户上次选择的答案 */
+  userAnswer: string | null
+  /** 上次答题是否正确 */
+  isCorrect: boolean | null
 }
 
 const bankQuestions = ref<BankQuestion[]>([])
@@ -97,11 +103,15 @@ const bankCurrent = computed<AnswerableQuestion | null>(() => {
   const q = bankQuestions.value[bankIndex.value]
   if (!q) return null
   return {
+    id: q.id,
     stem: q.stem,
     choices: q.choices,
     answer: q.answer,
     point: q.pointTitle ?? '',
     analysis: q.analysis ?? '',
+    answered: q.answered,
+    userAnswer: q.userAnswer ?? undefined,
+    isCorrect: q.isCorrect ?? undefined,
   }
 })
 
@@ -111,7 +121,7 @@ const bankType = computed<'single' | 'fill' | 'judge'>(() => {
   return type === 'fill' || type === 'judge' ? type : 'single'
 })
 
-/** 拉取当前考点的全部例题 */
+/** 拉取当前考点的全部例题（未答在前、已答在后，由后端排序） */
 async function fetchBank() {
   if (!pointId.value) return
   bankLoading.value = true
@@ -124,6 +134,19 @@ async function fetchBank() {
     message.error((e as Error).message)
   } finally {
     bankLoading.value = false
+  }
+}
+
+/**
+ * 例题库答题完成：仅本地把该题标记为已答并记录答案，不重新拉取列表。
+ * 这样不会打断当前浏览位置；「已答排在最后」的排序在下次进入该页面时由后端返回。
+ */
+function handleBankAnswered(questionId: string, userAnswer: string, isCorrect: boolean) {
+  const q = bankQuestions.value.find((item) => item.id === questionId)
+  if (q) {
+    q.answered = true
+    q.userAnswer = userAnswer
+    q.isCorrect = isCorrect
   }
 }
 
@@ -163,10 +186,7 @@ onMounted(() => {
 
     <!-- 例题库（可折叠，位于考点最上方，上一题/下一题浏览） -->
     <n-collapse v-model:expanded-names="bankExpanded" class="bank-collapse">
-      <n-collapse-item
-        name="bank"
-        :title="`📚 例题库${bankQuestions.length ? `（${bankQuestions.length} 题）` : ''}`"
-      >
+      <n-collapse-item name="bank" :title="`📚 例题库${bankQuestions.length ? `（${bankQuestions.length} 题）` : ''}`">
         <div v-if="bankLoading" class="bank-loading">
           <n-spin size="small" />
         </div>
@@ -174,20 +194,12 @@ onMounted(() => {
           <div class="bank-nav">
             <n-button size="small" :disabled="bankIndex <= 0" @click="prevBank">上一题</n-button>
             <span class="bank-count">{{ bankIndex + 1 }} / {{ bankQuestions.length }}</span>
-            <n-button
-              size="small"
-              :disabled="bankIndex >= bankQuestions.length - 1"
-              @click="nextBank"
-              >下一题
+            <n-button size="small" :disabled="bankIndex >= bankQuestions.length - 1" @click="nextBank">下一题
             </n-button>
           </div>
           <n-divider style="margin: 10px 0" />
-          <QuestionCard
-            :question="bankCurrent"
-            :question-type="bankType"
-            :point-id="pointId"
-            :point-title="practiceTitle"
-          />
+          <QuestionCard :question="bankCurrent" :question-type="bankType" :point-id="pointId"
+            :point-title="practiceTitle" @answered="handleBankAnswered" />
         </template>
         <div v-else class="bank-empty">该考点暂无例题</div>
       </n-collapse-item>
@@ -213,12 +225,8 @@ onMounted(() => {
         </n-card>
 
         <n-card v-if="generated" class="generated-card" size="small">
-          <QuestionCard
-            :question="generated"
-            :question-type="generatedType"
-            :point-id="pointId"
-            :point-title="practiceTitle"
-          />
+          <QuestionCard :question="generated" :question-type="generatedType" :point-id="pointId"
+            :point-title="practiceTitle" />
         </n-card>
       </n-collapse-item>
     </n-collapse>

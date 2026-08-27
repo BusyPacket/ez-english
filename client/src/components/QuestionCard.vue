@@ -6,12 +6,24 @@ import MarkdownView from './MarkdownView.vue'
 
 /** 可答题题目结构（AI 生成题 / 例题库通用） */
 export interface AnswerableQuestion {
+  /** 例题库题目唯一 id（UUID；AI 生成题无此字段，不记录答题） */
+  id?: string
   stem?: string
   choices?: string[]
   answer?: string
   point?: string
   analysis?: string
+  /** 是否已答题（例题库列表附带） */
+  answered?: boolean
+  /** 用户上次选择的答案：单选为选项字母，判断为「正确/错误」，填空为用户输入文本 */
+  userAnswer?: string
+  /** 上次答题是否正确 */
+  isCorrect?: boolean
 }
+
+const emit = defineEmits<{
+  (e: 'answered', questionId: string, userAnswer: string, isCorrect: boolean): void
+}>()
 
 const props = defineProps<{
   question: AnswerableQuestion | null
@@ -69,29 +81,49 @@ function submitAnswer() {
   const q = props.question
   if (!q || submitted.value) return
   let correct = false
+  // 用户选择的答案文本：单选为选项字母，判断为「正确/错误」，填空为用户输入
+  let userAnswer = ''
   if (props.questionType === 'single') {
     if (selectedChoice.value === null) {
       message.warning('请先选择答案')
       return
     }
-    correct = normalize(optionLetters[selectedChoice.value]) === normalize(q.answer)
+    userAnswer = optionLetters[selectedChoice.value] ?? ''
+    correct = normalize(userAnswer) === normalize(q.answer)
   } else if (props.questionType === 'judge') {
     if (!judgeChoice.value) {
       message.warning('请先选择正确或错误')
       return
     }
-    correct = judgeValue(judgeChoice.value) === judgeValue(q.answer)
+    userAnswer = judgeChoice.value
+    correct = judgeValue(userAnswer) === judgeValue(q.answer)
   } else {
     if (!fillInput.value.trim()) {
       message.warning('请输入答案')
       return
     }
-    correct = normalize(fillInput.value) === normalize(q.answer)
+    userAnswer = fillInput.value.trim()
+    correct = normalize(userAnswer) === normalize(q.answer)
   }
   isCorrect.value = correct
   submitted.value = true
   // 上报答题数（后台统计，失败不影响答题体验）
-  void api('/profile/answer', { method: 'POST' }).catch(() => {})
+  void api('/profile/answer', { method: 'POST' }).catch(() => { })
+  // 例题库题目（有 id）：记录用户答案/选项 + 判分，成功后再通知父组件刷新「已答」排序
+  const questionId = q.id
+  if (questionId) {
+    void api('/questions/answers', {
+      method: 'POST',
+      body: JSON.stringify({
+        questionId,
+        type: props.questionType,
+        userAnswer,
+        isCorrect: correct,
+      }),
+    })
+      .then(() => emit('answered', questionId, userAnswer, correct))
+      .catch(() => { })
+  }
 }
 
 // —— 收藏 ——
@@ -176,7 +208,8 @@ async function askFollowUp() {
   }
 }
 
-// 题目切换时重置答题/收藏/追问状态，并以新题为追问上下文起点
+// 题目切换时重置答题/收藏/追问状态，并以新题为追问上下文起点；
+// 若该题已答过（例题库附带 answered），恢复上次的选择与判分结果
 watch(
   () => props.question,
   (q) => {
@@ -187,6 +220,18 @@ watch(
     followUpMessages.value = q
       ? [{ role: 'assistant', content: '已生成题目：\n' + questionContext(q) }]
       : []
+    if (q?.answered && q.userAnswer) {
+      if (props.questionType === 'single') {
+        const idx = optionLetters.indexOf(q.userAnswer.toUpperCase())
+        if (idx >= 0) selectedChoice.value = idx
+      } else if (props.questionType === 'judge') {
+        judgeChoice.value = q.userAnswer === '错误' ? '错误' : '正确'
+      } else {
+        fillInput.value = q.userAnswer
+      }
+      isCorrect.value = Boolean(q.isCorrect)
+      submitted.value = true
+    }
   },
   { immediate: true },
 )
@@ -194,84 +239,52 @@ watch(
 
 <template>
   <div v-if="question" class="question-card">
+    <div v-if="question.answered" class="answered-badge">
+      <span class="answered-dot" />已答题
+    </div>
     <div class="gen-stem">{{ question.stem }}</div>
 
     <!-- 单选题：可点击选项（用 .length 判断，避免空数组 [] 误入此分支） -->
     <div v-if="question.choices?.length" class="gen-choices">
-      <div
-        v-for="(choice, i) in question.choices"
-        :key="i"
-        class="choice"
-        :class="{
-          selected: selectedChoice === i,
-          'correct-choice': submitted && isChoiceCorrect(i),
-          'wrong-choice': submitted && selectedChoice === i && !isChoiceCorrect(i),
-        }"
-        @click="pickChoice(i)"
-      >
+      <div v-for="(choice, i) in question.choices" :key="i" class="choice" :class="{
+        selected: selectedChoice === i,
+        'correct-choice': submitted && isChoiceCorrect(i),
+        'wrong-choice': submitted && selectedChoice === i && !isChoiceCorrect(i),
+      }" @click="pickChoice(i)">
         <span class="opt-letter">{{ optionLetters[i] }}</span>
         {{ choice }}
         <span v-if="!submitted && selectedChoice === i" class="choice-selected-mark">✓</span>
         <span v-if="submitted && isChoiceCorrect(i)" class="choice-tag tag-correct">
           {{ selectedChoice === i ? '✓ 正确' : '✓ 正确答案' }}
         </span>
-        <span v-else-if="submitted && selectedChoice === i" class="choice-tag tag-wrong"
-          >✗ 你的选择</span
-        >
+        <span v-else-if="submitted && selectedChoice === i" class="choice-tag tag-wrong">✗ 你的选择</span>
       </div>
     </div>
 
     <!-- 判断题 -->
     <div v-else-if="questionType === 'judge'" class="judge-row">
-      <n-button
-        size="small"
-        :type="judgeChoice === '正确' ? 'primary' : 'default'"
-        :disabled="submitted"
-        @click="judgeChoice = '正确'"
-        >正确</n-button
-      >
-      <n-button
-        size="small"
-        :type="judgeChoice === '错误' ? 'primary' : 'default'"
-        :disabled="submitted"
-        @click="judgeChoice = '错误'"
-        >错误</n-button
-      >
+      <n-button size="small" :type="judgeChoice === '正确' ? 'primary' : 'default'" :disabled="submitted"
+        @click="judgeChoice = '正确'">正确</n-button>
+      <n-button size="small" :type="judgeChoice === '错误' ? 'primary' : 'default'" :disabled="submitted"
+        @click="judgeChoice = '错误'">错误</n-button>
     </div>
 
     <!-- 填空题 -->
     <div v-else class="fill-row">
-      <n-input
-        v-model:value="fillInput"
-        size="small"
-        placeholder="请输入答案"
-        style="max-width: 320px"
-        :disabled="submitted"
-        @keyup.enter="submitAnswer"
-      />
+      <n-input v-model:value="fillInput" size="small" placeholder="请输入答案" style="max-width: 320px" :disabled="submitted"
+        @keyup.enter="submitAnswer" />
     </div>
 
     <div class="gen-actions">
-      <n-button
-        size="small"
-        :loading="favoriting"
-        :type="favoriteId ? 'warning' : 'default'"
-        @click="toggleFavorite"
-      >
+      <n-button size="small" :loading="favoriting" :type="favoriteId ? 'warning' : 'default'" @click="toggleFavorite">
         {{ favoriteId ? '★ 已收藏' : '☆ 收藏' }}
       </n-button>
-      <n-button v-if="!submitted" size="small" type="primary" @click="submitAnswer"
-        >提交答案</n-button
-      >
+      <n-button v-if="!submitted" size="small" type="primary" @click="submitAnswer">提交答案</n-button>
       <n-button v-else size="small" @click="resetAnswer">重新作答</n-button>
     </div>
 
     <!-- 提交后判分结果 -->
-    <div
-      v-if="submitted"
-      class="gen-result"
-      :class="isCorrect ? 'gen-result-ok' : 'gen-result-err'"
-    >
+    <div v-if="submitted" class="gen-result" :class="isCorrect ? 'gen-result-ok' : 'gen-result-err'">
       {{ isCorrect ? '✅ 回答正确' : `❌ 回答错误，正确答案：${question.answer}` }}
     </div>
 
@@ -294,13 +307,8 @@ watch(
         </div>
       </div>
       <div class="followup-row">
-        <n-input
-          v-model:value="followUpInput"
-          size="small"
-          placeholder="输入问题，追问这道题…"
-          :disabled="followUpAsking"
-          @keyup.enter="askFollowUp"
-        />
+        <n-input v-model:value="followUpInput" size="small" placeholder="输入问题，追问这道题…" :disabled="followUpAsking"
+          @keyup.enter="askFollowUp" />
         <n-button size="small" :loading="followUpAsking" @click="askFollowUp">追问</n-button>
       </div>
     </div>
@@ -311,6 +319,26 @@ watch(
 .gen-stem {
   font-weight: 500;
   white-space: pre-wrap;
+}
+
+.answered-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: rgba(24, 160, 88, 0.12);
+  color: #18a058;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.answered-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #18a058;
 }
 
 .gen-choices {

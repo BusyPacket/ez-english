@@ -36,3 +36,17 @@ export type UpdateQuestionDto = z.infer<typeof updateQuestionSchema>
 /** 例题新增校验（admin 添加）——字段与更新一致 */
 export const createQuestionSchema = updateQuestionSchema
 export type CreateQuestionDto = z.infer<typeof createQuestionSchema>
+
+/** 记录答题校验（用户作答例题库题目） */
+export const recordAnswerSchema = z.object({
+  // 题目 id（关联 questions.id）
+  questionId: z.string().min(1, '题目不能为空'),
+  // 题型：single 单选 / fill 填空 / judge 判断
+  type: z.enum(['single', 'fill', 'judge']),
+  // 用户选择的答案：单选为选项字母（如 A），判断为「正确/错误」，填空为用户输入文本
+  userAnswer: z.string().min(1, '答案不能为空'),
+  // 是否答对
+  isCorrect: z.boolean(),
+})
+
+export type RecordAnswerDto = z.infer<typeof recordAnswerSchema>

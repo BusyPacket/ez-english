@@ -18,7 +18,7 @@ interface ProgressRow {
 export interface ProgressSummary {
   total: number
   counts: Record<string, number>
-  masteredPercent: number
+  learnedPercent: number
 }
 
 function loadLocal(): Record<string, KnowledgeStatus> {
@@ -60,7 +60,7 @@ export const useProgressStore = defineStore('progress', () => {
     }
   }
 
-  /** 拉取学习进度汇总（各状态计数 + 后端计算的已掌握百分比） */
+  /** 拉取学习进度汇总（各状态计数 + 后端计算的已学习百分比） */
   async function fetchSummary() {
     try {
       summary.value = await api<ProgressSummary>('/progress/summary')

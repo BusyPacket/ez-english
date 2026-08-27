@@ -14,9 +14,12 @@ onMounted(() => {
 })
 
 const totalPointCount = computed(() => progressStore.summary?.total ?? 0)
-const learnedCount = computed(() => progressStore.summary?.counts.learned ?? 0)
-const masteredCount = computed(() => progressStore.summary?.counts.mastered ?? 0)
-const percent = computed(() => progressStore.summary?.masteredPercent ?? 0)
+// 已学习 = 已学习 + 已掌握（掌握也算已学习），与进度百分比口径一致
+const learnedCount = computed(
+  () =>
+    (progressStore.summary?.counts.learned ?? 0) + (progressStore.summary?.counts.mastered ?? 0),
+)
+const percent = computed(() => progressStore.summary?.learnedPercent ?? 0)
 const progressColor = computed(() => {
   if (percent.value >= 70) return '#18a058'
   if (percent.value >= 30) return '#f0a020'
@@ -46,7 +49,7 @@ function openPractice(id: string, title: string) {
         <n-h2>学习进度</n-h2>
         <n-space>
           <n-tag>总考点 {{ totalPointCount }}</n-tag>
-          <n-tag type="success">已掌握 {{ masteredCount }}</n-tag>
+          <n-tag type="success">已学习 {{ learnedCount }}</n-tag>
         </n-space>
       </n-space>
       <n-progress

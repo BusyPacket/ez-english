@@ -10,7 +10,7 @@ interface ProgressRow {
   userId: string
   name: string
   maskedEmail: string
-  masteredCount: number
+  learnedCount: number
   percent: number
 }
 
@@ -29,18 +29,18 @@ const list = ref<LeaderboardRow[]>([])
 const loading = ref(false)
 const error = ref('')
 
-/** 排行方式：progress 按已掌握考点数；answer 按答题数（默认答题数） */
+/** 排行方式：progress 按已学习考点数；answer 按答题数（默认答题数） */
 const mode = ref<'progress' | 'answer'>('answer')
 const modeOptions = [
   { label: '答题数', value: 'answer' },
-  { label: '掌握度', value: 'progress' },
+  { label: '已学习', value: 'progress' },
 ]
 
 const medalIcons: Record<number, string> = { 1: '🥇', 2: '🥈', 3: '🥉' }
 
 const title = computed(() => (mode.value === 'answer' ? '答题排行榜' : '学习进度排行榜'))
 const subtitle = computed(() =>
-  mode.value === 'answer' ? '按「答题数」排名' : '按「已掌握」考点数排名',
+  mode.value === 'answer' ? '按「答题数」排名' : '按「已学习」考点数排名',
 )
 
 const columns = computed<DataTableColumns<LeaderboardRow>>(() => {
@@ -74,14 +74,14 @@ const columns = computed<DataTableColumns<LeaderboardRow>>(() => {
   return [
     ...base,
     {
-      title: '已掌握',
-      key: 'masteredCount',
+      title: '已学习',
+      key: 'learnedCount',
       align: 'center' as const,
       render: (row: LeaderboardRow) =>
         h(
           NTag,
           { size: 'small', type: 'success', bordered: false },
-          { default: () => `${(row as ProgressRow).masteredCount} / ${totalPointCount}` },
+          { default: () => `${(row as ProgressRow).learnedCount} / ${totalPointCount}` },
         ),
     },
     {

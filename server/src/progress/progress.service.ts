@@ -36,7 +36,7 @@ export class ProgressService {
     return { userId, pointId, status: dto.status, updatedAt }
   }
 
-  /** 学习进度汇总：各状态计数 + 已掌握百分比（后端计算） */
+  /** 学习进度汇总：各状态计数 + 已学习百分比（后端计算） */
   // 统计口径基于 @ez-english/shared 的 totalPointCount 与 allPointIds（叶子考点）
   async getSummary(userId: string) {
     const rows = await db
@@ -62,13 +62,16 @@ export class ProgressService {
       }
     }
 
-    // 进度百分比：只统计「已掌握」
-    const masteredPercent = Math.round((counts[KnowledgeStatus.Mastered] / totalPointCount) * 100)
+    // 进度百分比：统计「已学习」（已学习 + 已掌握，掌握也算已学习）
+    const learnedPercent = Math.round(
+      ((counts[KnowledgeStatus.Learned] + counts[KnowledgeStatus.Mastered]) / totalPointCount) *
+        100,
+    )
 
-    return { total: totalPointCount, counts, masteredPercent }
+    return { total: totalPointCount, counts, learnedPercent }
   }
 
-  /** 排行榜：type=progress 按已掌握考点数，type=answer 按答题数；均降序，昵称优先、邮箱脱敏 */
+  /** 排行榜：type=progress 按已学习考点数，type=answer 按答题数；均降序，昵称优先、邮箱脱敏 */
   async getLeaderboard(type: 'progress' | 'answer' = 'progress') {
     const users = await db.select().from(schema.users).all()
 
@@ -84,30 +87,33 @@ export class ProgressService {
       return list.map((item, index) => ({ rank: index + 1, ...item }))
     }
 
-    // 按已掌握考点数排行
+    // 按已学习考点数排行（已学习 + 已掌握）
     const rows = await db.select().from(schema.progress).all()
     const validIds = new Set(allPointIds)
-    const masteredByUser = new Map<string, number>()
+    const learnedByUser = new Map<string, number>()
     for (const row of rows) {
-      if (row.status === KnowledgeStatus.Mastered && validIds.has(row.pointId)) {
-        masteredByUser.set(row.userId, (masteredByUser.get(row.userId) ?? 0) + 1)
+      if (
+        (row.status === KnowledgeStatus.Learned || row.status === KnowledgeStatus.Mastered) &&
+        validIds.has(row.pointId)
+      ) {
+        learnedByUser.set(row.userId, (learnedByUser.get(row.userId) ?? 0) + 1)
       }
     }
 
     const list = users.map((user) => {
-      const masteredCount = masteredByUser.get(user.id) ?? 0
-      const percent = Math.round((masteredCount / totalPointCount) * 100)
+      const learnedCount = learnedByUser.get(user.id) ?? 0
+      const percent = Math.round((learnedCount / totalPointCount) * 100)
       return {
         userId: user.id,
         name: displayName(user.nickname, user.email),
         maskedEmail: maskEmail(user.email),
-        masteredCount,
+        learnedCount,
         percent,
       }
     })
 
-    // 按已掌握数降序，并列时按用户 id 稳定排序
-    list.sort((a, b) => b.masteredCount - a.masteredCount || a.userId.localeCompare(b.userId))
+    // 按已学习数降序，并列时按用户 id 稳定排序
+    list.sort((a, b) => b.learnedCount - a.learnedCount || a.userId.localeCompare(b.userId))
     return list.map((item, index) => ({ rank: index + 1, ...item }))
   }
 }

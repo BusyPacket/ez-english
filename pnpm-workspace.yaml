@@ -2,3 +2,7 @@ packages:
   - client
   - server
   - packages/shared
+allowBuilds:
+  esbuild: true
+overrides:
+  drizzle-orm: 0.45.2

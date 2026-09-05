@@ -200,6 +200,31 @@ export class AiService {
     return { reply }
   }
 
+  /** 流式点评英语作文。 */
+  async *streamReviewWriting(userId: string, dto: ReviewWritingDto): AsyncGenerator<string> {
+    await this.assertTrialAvailable(userId)
+    const { apiKey, model } = await this.profileService.getChatConfig(userId)
+    await this.profileService.assertSufficientBalance(userId, MIN_BALANCE)
+    const userContent = `作文题目：${dto.topic ?? '未提供'}\n\n学生作文：\n${dto.essay}`
+    yield* this.deepseek.chatStream(apiKey, model, [
+      { role: 'system', content: REVIEW_WRITING_SYSTEM_PROMPT },
+      { role: 'user', content: userContent },
+    ])
+  }
+
+  /** 流式追问。 */
+  async *streamFollowUp(userId: string, dto: GenerateFollowUpDto): AsyncGenerator<string> {
+    await this.assertTrialAvailable(userId)
+    const { apiKey, model } = await this.profileService.getChatConfig(userId)
+    await this.profileService.assertSufficientBalance(userId, MIN_BALANCE)
+    const typeLabel = { single: '单选题', fill: '填空题', judge: '判断题' }[dto.type]
+    yield* this.deepseek.chatStream(apiKey, model, [
+      { role: 'system', content: generatePracticeSystemPrompt(dto.point, typeLabel) },
+      ...dto.history,
+      { role: 'user', content: dto.question },
+    ])
+  }
+
   /** 解析模型返回文本为 JSON，兼容 ```json ``` 代码块包裹 */
   private parseJson(raw: string): unknown {
     const trimmed = raw.trim()

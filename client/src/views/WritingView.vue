@@ -2,7 +2,7 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
-import { api } from '@/api/http'
+import { api, streamApi } from '@/api/http'
 import { useUserStore } from '@/stores/user'
 import MarkdownView from '@/components/MarkdownView.vue'
 import { writingLessons } from '@/data/writingLessons'
@@ -74,11 +74,16 @@ async function reviewWriting() {
   reviewing.value = true
   review.value = ''
   try {
-    const res = await api<{ reply: string }>('/ai/review-writing', {
-      method: 'POST',
-      body: JSON.stringify({ essay: essay.value, topic: topic.value?.stem }),
-    })
-    review.value = res.reply
+    await streamApi(
+      '/ai/review-writing',
+      {
+        method: 'POST',
+        body: JSON.stringify({ essay: essay.value, topic: topic.value?.stem }),
+      },
+      (content) => {
+        review.value += content
+      },
+    )
   } catch (e) {
     message.error((e as Error).message)
   } finally {

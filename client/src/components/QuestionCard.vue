@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
 import { useMessage } from 'naive-ui'
-import { api } from '@/api/http'
+import { api, streamApi } from '@/api/http'
 import MarkdownView from './MarkdownView.vue'
 
 /** 可答题题目结构（AI 生成题 / 例题库通用） */
@@ -165,6 +165,7 @@ async function toggleFavorite() {
 // —— 追问 ——
 const followUpInput = ref('')
 const followUpAsking = ref(false)
+const streamingReply = ref('')
 const followUpList = ref<{ question: string; reply: string }[]>([])
 const followUpMessages = ref<{ role: 'user' | 'assistant'; content: string }[]>([])
 
@@ -185,25 +186,33 @@ async function askFollowUp() {
   const q = props.question
   if (!question || followUpAsking.value || !q) return
   followUpAsking.value = true
+  streamingReply.value = ''
   try {
-    const res = await api<{ reply: string }>('/ai/follow-up', {
-      method: 'POST',
-      body: JSON.stringify({
-        point: props.pointId,
-        type: props.questionType,
-        history: followUpMessages.value,
-        question,
-      }),
-    })
+    await streamApi(
+      '/ai/follow-up',
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          point: props.pointId,
+          type: props.questionType,
+          history: followUpMessages.value,
+          question,
+        }),
+      },
+      (content) => {
+        streamingReply.value += content
+      },
+    )
     followUpMessages.value.push(
       { role: 'user', content: question },
-      { role: 'assistant', content: res.reply },
+      { role: 'assistant', content: streamingReply.value },
     )
-    followUpList.value.push({ question, reply: res.reply })
+    followUpList.value.push({ question, reply: streamingReply.value })
     followUpInput.value = ''
   } catch (e) {
     message.error((e as Error).message)
   } finally {
+    streamingReply.value = ''
     followUpAsking.value = false
   }
 }
@@ -216,6 +225,7 @@ watch(
     resetAnswer()
     favoriteId.value = null
     followUpList.value = []
+    streamingReply.value = ''
     followUpInput.value = ''
     followUpMessages.value = q
       ? [{ role: 'assistant', content: '已生成题目：\n' + questionContext(q) }]
@@ -340,6 +350,12 @@ watch(
             <div class="followup-a-label">答：</div>
             <MarkdownView :content="item.reply" />
           </div>
+        </div>
+      </div>
+      <div v-if="followUpAsking && streamingReply" class="followup-item">
+        <div class="followup-a">
+          <div class="followup-a-label">答：</div>
+          <MarkdownView :content="streamingReply" />
         </div>
       </div>
       <div class="followup-row">

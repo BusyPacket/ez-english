@@ -14,10 +14,5 @@
     "check": "node scripts/ci.mjs",
     "check:quick": "node scripts/ci.mjs --skip-install",
     "set-version": "node scripts/set-version.mjs"
-  },
-  "pnpm": {
-    "overrides": {
-      "drizzle-orm": "0.45.2"
-    }
   }
 }

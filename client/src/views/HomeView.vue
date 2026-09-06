@@ -197,24 +197,26 @@ onBeforeUnmount(() => {
 
     <!-- 优势介绍 -->
     <section class="advantages">
-      <h2 class="advantages-title">为什么选择我们</h2>
+      <h2 class="advantages-title">本站优势</h2>
       <div class="adv-grid">
         <div class="adv-card">
-          <div class="adv-icon" aria-hidden="true">💰</div>
-          <h3 class="adv-name">学多少花多少，不学不花钱</h3>
+          <div class="adv-icon" aria-hidden="true">🧠</div>
+          <h3 class="adv-name">AI 深度接入</h3>
           <p class="adv-desc">
-            学一道题花一道题的钱，学 100 道题花 100 道题的钱——使用 AI 动态实时计费，不花冤枉钱。
-            传统报班不管学没学都要先交钱，这里每一分钱都花在实际学习上。目前国产 AI 例如 DeepSeek
-            比较便宜，还采用类似电费的峰谷计费
+            AI 已深度接入学习的每一个环节：随时提问、即时答疑，还能按考点智能出题、批改作文。
+            目前国产大模型 DeepSeek 价格亲民，还采用类似电费的峰谷计费，空闲时段半价
             <n-tooltip
               trigger="hover"
-              :style="{ maxWidth: '280px', whiteSpace: 'normal', lineHeight: '1.6' }"
+              :style="{ maxWidth: '300px', whiteSpace: 'normal', lineHeight: '1.6' }"
             >
               <template #trigger>
                 <span class="tip-badge" aria-label="峰谷计费说明">?</span>
               </template>
-              DeepSeek 采用类似电费的峰谷计费：空闲时段价格仅为高峰时段的一半。高峰时段为北京时间
-              9:00-12:00、14:00-18:00，其余为空闲时段。
+              DeepSeek V4 峰谷计费：高峰时段为北京时间周一至周五
+              9:00-12:00、14:00-18:00，其余时间（含周末）均为空闲时段，空闲时段价格仅为高峰时段的一半。
+              以默认模型 deepseek-v4-flash 为例（每百万 tokens）：高峰时段输入 3 元、输出 9
+              元（缓存命中输入仅 0.1 元）； 空闲时段输入 1.5 元、输出 4.5 元。具体以 DeepSeek
+              官方价格页为准。
             </n-tooltip>
             。
           </p>

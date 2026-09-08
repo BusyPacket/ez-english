@@ -5,6 +5,7 @@ import { useMessage } from 'naive-ui'
 import { api } from '@/api/http'
 import { useUserStore } from '@/stores/user'
 import QuestionCard, { type AnswerableQuestion } from '@/components/QuestionCard.vue'
+import { usePrefetchQueue } from '@/composables/usePrefetchQueue'
 
 const route = useRoute()
 const router = useRouter()
@@ -25,51 +26,94 @@ const typeOptions = [
   { label: '判断题', value: 'judge' },
 ]
 
-/** AI 生成状态与结果 */
-const generating = ref(false)
-const generated = ref<AnswerableQuestion | null>(null)
-/** 已生成题目对应的题型（生成时锁定） */
-const generatedType = ref<'single' | 'fill' | 'judge'>('single')
+// —— AI 生题缓存队列 ——
+// 队列本身（预生成 size 道、消费后自动补满、并发与过期响应防护）由 usePrefetchQueue 提供；
+// 这里只保留业务绑定：整批锁定题型、题干去重收集、AI 可用性与错误提示。
+type QuestionType = 'single' | 'fill' | 'judge'
+
+/** 队列整批锁定的题型（随生成时的题型选择；切换题型会清空队列避免混题） */
+const queueType = ref<QuestionType>('single')
 /** 本次会话已生成过的题干（传给后端去重，避免连续生成重复题） */
 const generatedStems = ref<string[]>([])
 
-/** 生成按钮文案：生成中 → 生成中；已生成过 → 再来一题；否则 → 生成题目 */
-const generateBtnText = computed(() => {
-  if (generating.value) return '生成中'
-  return generated.value ? '再来一题' : '生成题目'
+const typeLabels: Record<QuestionType, string> = {
+  single: '单选题',
+  fill: '填空题',
+  judge: '判断题',
+}
+
+/** 生成一题（produce 工厂：由队列内部并发生成时调用） */
+async function produceQuestion(): Promise<AnswerableQuestion> {
+  const q = await api<AnswerableQuestion>('/ai/generate-practice', {
+    method: 'POST',
+    body: JSON.stringify({
+      point: pointId.value,
+      type: queueType.value,
+      excludeStems: generatedStems.value,
+    }),
+  })
+  if (q?.stem) generatedStems.value.push(q.stem)
+  return q
+}
+
+const queue = usePrefetchQueue<AnswerableQuestion>({
+  size: 3,
+  produce: produceQuestion,
+  onError: (e) => message.error(e instanceof Error ? e.message : String(e)),
 })
 
-/** 生成题目：需 AI 可用；按当前考点与题型调用后端（答题/收藏/追问由 QuestionCard 处理） */
-async function generateQuestion() {
-  if (generating.value) return
-  if (!userStore.aiAvailable) {
-    if (userStore.user?.trialExpired) {
-      message.warning('7 天试用期已到，请联系管理员升级会员以继续使用 AI 功能')
-    } else {
-      message.warning('要使用 AI 功能必须先进行配置')
-      router.push('/profile')
-    }
-    return
+/** 以下为模板便利别名（顶层 ref/computed 在模板中会自动解包） */
+const currentQuestion = queue.current
+const generating = queue.loading
+const hasCachedNext = queue.hasNext
+const cacheText = queue.sizeText
+const lastGenError = queue.lastError
+/** 队列当前长度（模板专用，避免直接触摸 queue.items.value） */
+const queueLen = computed(() => queue.items.value.length)
+const genBtnText = computed(() => {
+  if (generating.value) return queueLen.value ? '补题中…' : '生成中…'
+  return queueLen.value ? '换一批' : '生成题目'
+})
+
+/** AI 可用性检查：不可用时提示并跳转配置页 */
+function assertAiAvailable(): boolean {
+  if (userStore.aiAvailable) return true
+  if (userStore.user?.trialExpired) {
+    message.warning('7 天试用期已到，请联系管理员升级会员以继续使用 AI 功能')
+  } else {
+    message.warning('要使用 AI 功能必须先进行配置')
+    router.push('/profile')
   }
-  generating.value = true
-  try {
-    generated.value = await api<AnswerableQuestion>('/ai/generate-practice', {
-      method: 'POST',
-      body: JSON.stringify({
-        point: pointId.value,
-        type: questionType.value,
-        excludeStems: generatedStems.value,
-      }),
-    })
-    generatedType.value = questionType.value // 锁定当前题目题型
-    if (generated.value?.stem) generatedStems.value.push(generated.value.stem)
-    message.success('已生成题目')
-  } catch (e) {
-    message.error((e as Error).message)
-  } finally {
-    generating.value = false
-  }
+  return false
 }
+
+/** 首次生成 / 换一批：清空后并行补满 3 道 */
+function startGeneration() {
+  if (generating.value) return
+  if (!assertAiAvailable()) return
+  queue.reset()
+  queueType.value = questionType.value // 整批锁定当前题型
+  queue.fill()
+  message.success('已开始预生成 3 道题，第一题就绪后即可作答')
+}
+
+/** 进入下一题（模板按钮）：消费队首，队列自动在后台补一题 */
+function nextQuestion() {
+  queue.next()
+}
+
+/** 补题重试（模板在缓存不足且上次生成失败时显示） */
+function refill() {
+  queue.fill()
+}
+
+// 切换题型会破坏「整批同题型」的约束：清空现有缓存并提示重新生成
+watch(questionType, (t) => {
+  if (queueLen.value > 0 || generating.value) {
+    queue.reset()
+    message.info(`题型已切换为「${typeLabels[t]}」，原缓存已清空，请重新生成`)
+  }
+})
 
 // —— 例题库（该考点全部例题，可折叠 + 上一题/下一题浏览） ——
 interface BankQuestion {
@@ -223,7 +267,7 @@ onMounted(() => {
       </n-collapse-item>
     </n-collapse>
 
-    <!-- AI 生题（可折叠） -->
+    <!-- AI 生题（可折叠）：预生成缓存队列，做完一题点「下一题」后自动补一题 -->
     <n-collapse v-model:expanded-names="aiExpanded" class="ai-collapse">
       <n-collapse-item name="ai" title="🤖 AI生题">
         <n-card class="type-card" size="small">
@@ -236,20 +280,47 @@ onMounted(() => {
                 </n-radio-button>
               </n-radio-group>
             </n-space>
-            <n-button type="success" :loading="generating" @click="generateQuestion">{{
-              generateBtnText
-            }}</n-button>
+            <n-button
+              type="success"
+              :loading="generating && !queueLen"
+              :disabled="generating && queueLen > 0"
+              @click="startGeneration"
+              >{{ genBtnText }}</n-button
+            >
           </n-space>
         </n-card>
 
-        <n-card v-if="generated" class="generated-card" size="small">
+        <!-- 当前作答/浏览的题（队首） -->
+        <n-card v-if="currentQuestion" class="generated-card" size="small">
           <QuestionCard
-            :question="generated"
-            :question-type="generatedType"
+            :question="currentQuestion"
+            :question-type="queueType"
             :point-id="pointId"
             :point-title="practiceTitle"
           />
+          <div class="queue-bar">
+            <n-tag size="small" :bordered="false" type="info">缓存 {{ cacheText }}</n-tag>
+            <n-button v-if="!hasCachedNext && lastGenError" size="small" secondary @click="refill"
+              >补题失败，重试</n-button
+            >
+            <n-button type="primary" size="small" :disabled="!hasCachedNext" @click="nextQuestion">
+              <template v-if="hasCachedNext">下一题（剩 {{ queueLen - 1 }} 道缓存）</template>
+              <template v-else-if="generating">缓存补充中…</template>
+              <template v-else>下一题</template>
+            </n-button>
+          </div>
         </n-card>
+
+        <!-- 首题生成中占位 -->
+        <n-card v-else-if="generating" class="generated-card" size="small">
+          <div class="queue-spin">
+            <n-spin size="small" />
+            <span>正在生成第 1 道题…</span>
+          </div>
+        </n-card>
+
+        <!-- 空态 -->
+        <n-empty v-else class="ai-empty" description="点击上方「生成题目」，将预生成 3 道题缓存" />
       </n-collapse-item>
     </n-collapse>
   </div>
@@ -275,6 +346,28 @@ onMounted(() => {
 }
 
 .generated-card {
+  margin-top: 16px;
+}
+
+.queue-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 14px;
+}
+
+.queue-spin {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 12px 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.ai-empty {
   margin-top: 16px;
 }
 

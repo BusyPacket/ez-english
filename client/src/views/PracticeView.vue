@@ -66,13 +66,12 @@ const queue = usePrefetchQueue<AnswerableQuestion>({
 const currentQuestion = queue.current
 const generating = queue.loading
 const hasCachedNext = queue.hasNext
-const cacheText = queue.sizeText
 const lastGenError = queue.lastError
-/** 队列当前长度（模板专用，避免直接触摸 queue.items.value） */
+/** 队列当前长度（仅用于控制「生成/重新生成」按钮状态，不向用户展示数量） */
 const queueLen = computed(() => queue.items.value.length)
 const genBtnText = computed(() => {
-  if (generating.value) return queueLen.value ? '补题中…' : '生成中…'
-  return queueLen.value ? '换一批' : '生成题目'
+  if (generating.value) return '出题中…'
+  return queueLen.value ? '重新生成' : '生成题目'
 })
 
 /** AI 可用性检查：不可用时提示并跳转配置页 */
@@ -87,14 +86,13 @@ function assertAiAvailable(): boolean {
   return false
 }
 
-/** 首次生成 / 换一批：清空后并行补满 3 道 */
+/** 首次生成 / 重新生成：清空当前题目并重新出题（预生成数量对用户透明） */
 function startGeneration() {
   if (generating.value) return
   if (!assertAiAvailable()) return
   queue.reset()
   queueType.value = questionType.value // 整批锁定当前题型
   queue.fill()
-  message.success('已开始预生成 3 道题，第一题就绪后即可作答')
 }
 
 /** 进入下一题（模板按钮）：消费队首，队列自动在后台补一题 */
@@ -102,16 +100,16 @@ function nextQuestion() {
   queue.next()
 }
 
-/** 补题重试（模板在缓存不足且上次生成失败时显示） */
+/** 重新出题（模板在出题失败、且暂无可用的下一题时显示） */
 function refill() {
   queue.fill()
 }
 
-// 切换题型会破坏「整批同题型」的约束：清空现有缓存并提示重新生成
+// 切换题型会破坏「整批同题型」的约束：清空当前题目并提示重新生成
 watch(questionType, (t) => {
   if (queueLen.value > 0 || generating.value) {
     queue.reset()
-    message.info(`题型已切换为「${typeLabels[t]}」，原缓存已清空，请重新生成`)
+    message.info(`题型已切换为「${typeLabels[t]}」，请重新生成题目`)
   }
 })
 
@@ -230,34 +228,20 @@ onMounted(() => {
 
     <!-- 例题库（可折叠，位于考点最上方，上一题/下一题浏览） -->
     <n-collapse v-model:expanded-names="bankExpanded" class="bank-collapse">
-      <n-collapse-item
-        name="bank"
-        :title="`📚 例题库${bankQuestions.length ? `（${bankQuestions.length} 题）` : ''}`"
-      >
+      <n-collapse-item name="bank" :title="`📚 例题库${bankQuestions.length ? `（${bankQuestions.length} 题）` : ''}`">
         <div v-if="bankLoading" class="bank-loading">
           <n-spin size="small" />
         </div>
         <template v-else-if="bankQuestions.length">
-          <QuestionCard
-            :question="bankCurrent"
-            :question-type="bankType"
-            :point-id="pointId"
-            :point-title="practiceTitle"
-            @answered="handleBankAnswered"
-          >
+          <QuestionCard :question="bankCurrent" :question-type="bankType" :point-id="pointId"
+            :point-title="practiceTitle" @answered="handleBankAnswered">
             <!-- 上一题/下一题导航放在「追问」上方 -->
             <template #before-followup>
               <n-divider style="margin: 10px 0" />
               <div class="bank-nav">
-                <n-button size="small" :disabled="bankIndex <= 0" @click="prevBank"
-                  >上一题</n-button
-                >
+                <n-button size="small" :disabled="bankIndex <= 0" @click="prevBank">上一题</n-button>
                 <span class="bank-count">{{ bankIndex + 1 }} / {{ bankQuestions.length }}</span>
-                <n-button
-                  size="small"
-                  :disabled="bankIndex >= bankQuestions.length - 1"
-                  @click="nextBank"
-                  >下一题
+                <n-button size="small" :disabled="bankIndex >= bankQuestions.length - 1" @click="nextBank">下一题
                 </n-button>
               </div>
             </template>
@@ -280,34 +264,24 @@ onMounted(() => {
                 </n-radio-button>
               </n-radio-group>
             </n-space>
-            <n-button
-              type="success"
-              :loading="generating && !queueLen"
-              :disabled="generating && queueLen > 0"
-              @click="startGeneration"
-              >{{ genBtnText }}</n-button
-            >
+            <n-button type="success" :loading="generating && !queueLen" :disabled="generating && queueLen > 0"
+              @click="startGeneration">{{ genBtnText }}</n-button>
           </n-space>
         </n-card>
 
         <!-- 当前作答/浏览的题（队首） -->
         <n-card v-if="currentQuestion" class="generated-card" size="small">
-          <QuestionCard
-            :question="currentQuestion"
-            :question-type="queueType"
-            :point-id="pointId"
-            :point-title="practiceTitle"
-          />
+          <QuestionCard :question="currentQuestion" :question-type="queueType" :point-id="pointId"
+            :point-title="practiceTitle" />
           <div class="queue-bar">
-            <n-tag size="small" :bordered="false" type="info">缓存 {{ cacheText }}</n-tag>
-            <n-button v-if="!hasCachedNext && lastGenError" size="small" secondary @click="refill"
-              >补题失败，重试</n-button
-            >
-            <n-button type="primary" size="small" :disabled="!hasCachedNext" @click="nextQuestion">
-              <template v-if="hasCachedNext">下一题（剩 {{ queueLen - 1 }} 道缓存）</template>
-              <template v-else-if="generating">缓存补充中…</template>
-              <template v-else>下一题</template>
-            </n-button>
+            <template v-if="hasCachedNext">
+              <n-button type="primary" size="small" @click="nextQuestion">下一题</n-button>
+            </template>
+            <template v-else>
+              <n-button v-if="generating" type="primary" size="small" disabled>正在出题…</n-button>
+              <n-button v-else-if="lastGenError" type="primary" size="small" @click="refill">出题失败，重试</n-button>
+              <n-button v-else type="primary" size="small" disabled>下一题</n-button>
+            </template>
           </div>
         </n-card>
 
@@ -315,12 +289,12 @@ onMounted(() => {
         <n-card v-else-if="generating" class="generated-card" size="small">
           <div class="queue-spin">
             <n-spin size="small" />
-            <span>正在生成第 1 道题…</span>
+            <span>正在出题…</span>
           </div>
         </n-card>
 
         <!-- 空态 -->
-        <n-empty v-else class="ai-empty" description="点击上方「生成题目」，将预生成 3 道题缓存" />
+        <n-empty v-else class="ai-empty" description="点击上方「生成题目」开始练习" />
       </n-collapse-item>
     </n-collapse>
   </div>

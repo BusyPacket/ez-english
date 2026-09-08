@@ -228,20 +228,34 @@ onMounted(() => {
 
     <!-- 例题库（可折叠，位于考点最上方，上一题/下一题浏览） -->
     <n-collapse v-model:expanded-names="bankExpanded" class="bank-collapse">
-      <n-collapse-item name="bank" :title="`📚 例题库${bankQuestions.length ? `（${bankQuestions.length} 题）` : ''}`">
+      <n-collapse-item
+        name="bank"
+        :title="`📚 例题库${bankQuestions.length ? `（${bankQuestions.length} 题）` : ''}`"
+      >
         <div v-if="bankLoading" class="bank-loading">
           <n-spin size="small" />
         </div>
         <template v-else-if="bankQuestions.length">
-          <QuestionCard :question="bankCurrent" :question-type="bankType" :point-id="pointId"
-            :point-title="practiceTitle" @answered="handleBankAnswered">
+          <QuestionCard
+            :question="bankCurrent"
+            :question-type="bankType"
+            :point-id="pointId"
+            :point-title="practiceTitle"
+            @answered="handleBankAnswered"
+          >
             <!-- 上一题/下一题导航放在「追问」上方 -->
             <template #before-followup>
               <n-divider style="margin: 10px 0" />
               <div class="bank-nav">
-                <n-button size="small" :disabled="bankIndex <= 0" @click="prevBank">上一题</n-button>
+                <n-button size="small" :disabled="bankIndex <= 0" @click="prevBank"
+                  >上一题</n-button
+                >
                 <span class="bank-count">{{ bankIndex + 1 }} / {{ bankQuestions.length }}</span>
-                <n-button size="small" :disabled="bankIndex >= bankQuestions.length - 1" @click="nextBank">下一题
+                <n-button
+                  size="small"
+                  :disabled="bankIndex >= bankQuestions.length - 1"
+                  @click="nextBank"
+                  >下一题
                 </n-button>
               </div>
             </template>
@@ -264,22 +278,33 @@ onMounted(() => {
                 </n-radio-button>
               </n-radio-group>
             </n-space>
-            <n-button type="success" :loading="generating && !queueLen" :disabled="generating && queueLen > 0"
-              @click="startGeneration">{{ genBtnText }}</n-button>
+            <n-button
+              type="success"
+              :loading="generating && !queueLen"
+              :disabled="generating && queueLen > 0"
+              @click="startGeneration"
+              >{{ genBtnText }}</n-button
+            >
           </n-space>
         </n-card>
 
         <!-- 当前作答/浏览的题（队首） -->
         <n-card v-if="currentQuestion" class="generated-card" size="small">
-          <QuestionCard :question="currentQuestion" :question-type="queueType" :point-id="pointId"
-            :point-title="practiceTitle" />
+          <QuestionCard
+            :question="currentQuestion"
+            :question-type="queueType"
+            :point-id="pointId"
+            :point-title="practiceTitle"
+          />
           <div class="queue-bar">
             <template v-if="hasCachedNext">
               <n-button type="primary" size="small" @click="nextQuestion">下一题</n-button>
             </template>
             <template v-else>
               <n-button v-if="generating" type="primary" size="small" disabled>正在出题…</n-button>
-              <n-button v-else-if="lastGenError" type="primary" size="small" @click="refill">出题失败，重试</n-button>
+              <n-button v-else-if="lastGenError" type="primary" size="small" @click="refill"
+                >出题失败，重试</n-button
+              >
               <n-button v-else type="primary" size="small" disabled>下一题</n-button>
             </template>
           </div>

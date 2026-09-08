@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Patch, Post, Put, Req, UseGuards } from '@nestjs/common'
+import { Body, Controller, Get, Patch, Post, Put, Query, Req, UseGuards } from '@nestjs/common'
 import { JwtAuthGuard } from '../common/jwt-auth.guard'
 import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import {
@@ -47,6 +47,13 @@ export class ProfileController {
   @Post('answer')
   incrementAnswer(@Req() req: { user: { sub: string } }) {
     return this.userService.incrementAnswerCount(req.user.sub)
+  }
+
+  /** 最近 N 天每日答题统计（无答题日期以 0 补全，不落库；默认 7 天，上限 90） */
+  @Get('answer/stats')
+  getDailyAnswerStats(@Req() req: { user: { sub: string } }, @Query('days') days?: string) {
+    const n = days ? Number(days) : 7
+    return this.userService.getDailyAnswerStats(req.user.sub, Number.isFinite(n) ? n : 7)
   }
 
   @Get('ai-options')

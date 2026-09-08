@@ -137,6 +137,22 @@ export const questionAnswers = sqliteTable(
   (table) => [uniqueIndex('question_answers_user_question_uk').on(table.userId, table.questionId)],
 )
 
+// 每日答题统计表（用户 × 日期 联合主键）
+// 仅当用户在某天有答题时插入一行；没有答题的日期不落库，节省存储空间。
+// 日期语义：北京时间（UTC+8）的 YYYY-MM-DD。
+export const userDailyAnswers = sqliteTable(
+  'user_daily_answers',
+  {
+    // 答题用户 id（关联 users.id）
+    userId: text('user_id').notNull(),
+    // 日期：北京时间(UTC+8)的 YYYY-MM-DD
+    date: text('date').notNull(),
+    // 当日答题数（每次提交一题 +1）
+    count: integer('count').notNull().default(1),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.date] })],
+)
+
 export type User = typeof users.$inferSelect
 export type NewUser = typeof users.$inferInsert
 export type Progress = typeof progress.$inferSelect
@@ -153,3 +169,5 @@ export type Question = typeof questions.$inferSelect
 export type NewQuestion = typeof questions.$inferInsert
 export type QuestionAnswer = typeof questionAnswers.$inferSelect
 export type NewQuestionAnswer = typeof questionAnswers.$inferInsert
+export type UserDailyAnswer = typeof userDailyAnswers.$inferSelect
+export type NewUserDailyAnswer = typeof userDailyAnswers.$inferInsert

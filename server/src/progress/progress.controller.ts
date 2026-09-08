@@ -25,7 +25,8 @@ export class ProgressController {
 
   @Get('leaderboard')
   getLeaderboard(@Query('type') type?: string) {
-    return this.progressService.getLeaderboard(type === 'answer' ? 'answer' : 'progress')
+    const t = type === 'today' ? 'today' : type === 'answer' ? 'answer' : 'progress'
+    return this.progressService.getLeaderboard(t)
   }
 
   @Put(':pointId')

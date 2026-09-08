@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common'
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import {
   allPointIds,
   displayName,
@@ -8,6 +8,7 @@ import {
   totalPointCount,
 } from '@ez-english/shared'
 import { db, schema } from '../database/database'
+import { beijingDateKey } from '../common/date-key'
 import type { UpdateProgressDto } from './progress.schema'
 
 @Injectable()
@@ -71,8 +72,53 @@ export class ProgressService {
     return { total: totalPointCount, counts, learnedPercent }
   }
 
-  /** 排行榜：type=progress 按已学习考点数，type=answer 按答题数；均降序，昵称优先、邮箱脱敏 */
-  async getLeaderboard(type: 'progress' | 'answer' = 'progress') {
+  /** 排行榜：today 按今日（北京时间）答题数；answer 按累计答题数；progress 按已学习考点数；均降序、邮箱脱敏 */
+  async getLeaderboard(type: 'progress' | 'answer' | 'today' = 'progress') {
+    // 今日榜：只列出当日（以凌晨 4 点为日界）有答题的用户，避免把 0 答题用户刷屏
+    if (type === 'today') {
+      const todayKey = beijingDateKey(Date.now())
+      const rows = await db
+        .select({
+          userId: schema.userDailyAnswers.userId,
+          count: schema.userDailyAnswers.count,
+        })
+        .from(schema.userDailyAnswers)
+        .where(eq(schema.userDailyAnswers.date, todayKey))
+        .all()
+      if (rows.length === 0) return []
+      const usersById = new Map(
+        (
+          await db
+            .select({
+              id: schema.users.id,
+              nickname: schema.users.nickname,
+              email: schema.users.email,
+            })
+            .from(schema.users)
+            .where(
+              inArray(
+                schema.users.id,
+                rows.map((r) => r.userId),
+              ),
+            )
+            .all()
+        ).map((u) => [u.id, u]),
+      )
+      const list = rows
+        .filter((r) => r.count > 0)
+        .map((r) => {
+          const u = usersById.get(r.userId)
+          return {
+            userId: r.userId,
+            name: u ? displayName(u.nickname, u.email) : '已注销用户',
+            maskedEmail: u ? maskEmail(u.email) : '',
+            answerCount: r.count,
+          }
+        })
+      list.sort((a, b) => b.answerCount - a.answerCount || a.userId.localeCompare(b.userId))
+      return list.map((item, index) => ({ rank: index + 1, ...item }))
+    }
+
     const users = await db.select().from(schema.users).all()
 
     // 按答题数排行（users.answer_count）

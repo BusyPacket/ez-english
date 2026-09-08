@@ -5,10 +5,11 @@ import {
   NotFoundException,
 } from '@nestjs/common'
 import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
-import { and, count, eq, like, or, sql } from 'drizzle-orm'
+import { and, count, eq, gte, like, lte, or, sql } from 'drizzle-orm'
 import { db, schema } from '../database/database'
 import { SettingsService } from '../settings/settings.service'
 import { UserRole, userRoleValues, type RegisterDto } from './user.schema'
+import { beijingDateKey, DAY_MS } from '../common/date-key'
 
 @Injectable()
 export class UserService {
@@ -97,7 +98,7 @@ export class UserService {
     return Date.now() > trialEnd
   }
 
-  /** 答题数 +1（每次提交一道题目），返回最新答题数 */
+  /** 答题数 +1（每次提交一道题目）：累计答题数 +1，并写入当日统计（日界为凌晨 4 点，无答题日不落库） */
   async incrementAnswerCount(id: string) {
     const updated = await db
       .update(schema.users)
@@ -108,7 +109,46 @@ export class UserService {
     if (!updated) {
       throw new NotFoundException('用户不存在')
     }
+    // 当日统计：当天首答插入 count=1，重复作答则在原行 +1（无答题的日期不产生记录）
+    await db
+      .insert(schema.userDailyAnswers)
+      .values({ userId: id, date: beijingDateKey(Date.now()), count: 1 })
+      .onConflictDoUpdate({
+        target: [schema.userDailyAnswers.userId, schema.userDailyAnswers.date],
+        set: { count: sql`${schema.userDailyAnswers.count} + 1` },
+      })
+      .run()
     return updated.answerCount
+  }
+
+  /** 查询某用户最近 days 天的每日答题统计；无答题的日期以 0 补全（不落库），按日期升序返回 */
+  async getDailyAnswerStats(id: string, days = 7) {
+    const n = Math.min(Math.max(Math.floor(days) || 1, 1), 90)
+    const todayTs = Date.now()
+    const fromKey = beijingDateKey(todayTs - (n - 1) * DAY_MS)
+    const toKey = beijingDateKey(todayTs)
+    const rows = await db
+      .select({
+        date: schema.userDailyAnswers.date,
+        count: schema.userDailyAnswers.count,
+      })
+      .from(schema.userDailyAnswers)
+      .where(
+        and(
+          eq(schema.userDailyAnswers.userId, id),
+          gte(schema.userDailyAnswers.date, fromKey),
+          lte(schema.userDailyAnswers.date, toKey),
+        ),
+      )
+      .orderBy(schema.userDailyAnswers.date)
+      .all()
+    const byDate = new Map(rows.map((r) => [r.date, r.count]))
+    const daysList: { date: string; count: number }[] = []
+    for (let i = n - 1; i >= 0; i--) {
+      const key = beijingDateKey(todayTs - i * DAY_MS)
+      daysList.push({ date: key, count: byDate.get(key) ?? 0 })
+    }
+    return { days: daysList, today: { date: toKey, count: byDate.get(toKey) ?? 0 } }
   }
 
   /** 获取当前用户资料（不含密码，含答题数与免费试用期信息） */

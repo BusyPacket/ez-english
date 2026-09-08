@@ -22,6 +22,37 @@ import {
 /** 生成前余额检查阈值（元）：余额低于此值阻止生成 */
 const MIN_BALANCE = 0.5
 
+/** 去掉选项文本开头的序号前缀："A. Each"→"Each"、"（B）Every"→"Every"、"C、go"→"go" */
+function stripChoicePrefix(text: string): string {
+  return text
+    .trim()
+    .replace(/^(?:[A-Da-d]\s*[.．、)）:：]|（[A-Da-d]）|\([A-Da-d]\))\s*/, '')
+    .trim()
+}
+
+/**
+ * 清洗 AI 生成的题目：
+ * - 去掉每个选项开头的 "A." "B." 等序号，避免前端再次加序号后出现 "A A. Each" 这类重复；
+ * - 选择题答案若被填成 "A. Each"/"（A）Each" 之类，只保留字母，保证判分可比较。
+ */
+function sanitizeGeneratedQuestion(raw: unknown): unknown {
+  if (typeof raw !== 'object' || raw === null) return raw
+  const q = raw as Record<string, unknown>
+  const hasChoices = Array.isArray(q.choices)
+  let answer = typeof q.answer === 'string' ? q.answer : ''
+  if (hasChoices) {
+    const m = answer.match(/^\s*(?:（|\(|)?([A-Da-d])\s*[.．、)）:：]\s*/)
+    if (m) answer = m[1].toUpperCase()
+  }
+  return {
+    ...q,
+    choices: hasChoices
+      ? (q.choices as unknown[]).map((c) => stripChoicePrefix(String(c)))
+      : q.choices,
+    answer,
+  }
+}
+
 @Injectable()
 export class AiService {
   constructor(
@@ -51,7 +82,7 @@ export class AiService {
       { role: 'user', content: userContent },
     ])
 
-    const question = this.parseJson(raw)
+    const question = sanitizeGeneratedQuestion(this.parseJson(raw))
     const result = generatedQuestionSchema.safeParse(question)
     if (!result.success) {
       throw new InternalServerErrorException('AI 返回的题目格式不符合预期')
@@ -94,7 +125,7 @@ export class AiService {
           content: generatePracticeSystemPrompt(dto.point, typeLabel, existing),
         },
       ])
-      const question = this.parseJson(raw)
+      const question = sanitizeGeneratedQuestion(this.parseJson(raw))
       const result = generatedQuestionSchema.safeParse(question)
       if (!result.success) {
         if (attempt < MAX_RETRY) continue

@@ -42,6 +42,7 @@
 - 修改首页文案
 - AI 公司与模型的状态与逻辑从个人资料页抽为 `useAiModels` composable：公司列表、实时模型拉取与刷新、「模型不属于当前公司则回退」的规则统一收口，页面只保留绑定
 - 个人资料页的昵称/密码表单逻辑抽为 `useProfile` composable：校验规则、提交与结果提示、编辑态与弹窗开关统一收口；数据请求仍留在 user store
+- 用户角色收敛为 `@ez-english/shared` 的 `UserRole` 枚举（前后端单一权威来源）：后端 `user.schema.ts` 改为转发并使用 `z.nativeEnum`；前端 `role` 由 `string` 收窄为枚举，角色名映射统一复用 `USER_ROLE_LABELS`（删除页面内重复定义），登录态判断、路由守卫、后台菜单与角色标签均改用枚举常量
 
 ### Fixed
 

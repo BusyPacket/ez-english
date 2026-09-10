@@ -12,6 +12,7 @@ import FeedbackView from '@/views/FeedbackView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
 import PracticeView from '@/views/PracticeView.vue'
 import FavoritesView from '@/views/FavoritesView.vue'
+import { UserRole } from '@ez-english/shared'
 import { useUserStore } from '@/stores/user'
 
 const router = createRouter({
@@ -102,7 +103,7 @@ router.beforeEach((to) => {
   if (!userStore.isLoggedIn) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }
-  if (to.meta.adminOnly && userStore.user?.role !== 'admin') {
+  if (to.meta.adminOnly && userStore.user?.role !== UserRole.Admin) {
     return { name: 'home' }
   }
 })

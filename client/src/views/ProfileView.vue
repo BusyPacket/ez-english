@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import dayjs from 'dayjs'
 import { api } from '@/api/http'
+import { USER_ROLE_LABELS, UserRole } from '@ez-english/shared'
 import { useAiModels } from '@/composables/useAiModels'
 import { useProfile } from '@/composables/useProfile'
 import { useUserStore, type User } from '@/stores/user'
@@ -12,11 +13,7 @@ const router = useRouter()
 const message = useMessage()
 const userStore = useUserStore()
 
-const roleLabels: Record<string, string> = {
-  user: '普通用户',
-  member: '会员用户',
-  admin: '管理员',
-}
+const roleLabels = USER_ROLE_LABELS
 
 const createdAt = computed(() =>
   userStore.user?.createdAt ? dayjs(userStore.user.createdAt).format('YYYY-MM-DD HH:mm') : '-',
@@ -26,7 +23,7 @@ const createdAt = computed(() =>
 const trialRemainingText = computed(() => {
   const u = userStore.user
   if (!u) return ''
-  if (u.role === 'member' || u.role === 'admin') return '不限'
+  if (u.role === UserRole.Member || u.role === UserRole.Admin) return '不限'
   if (u.trialExpired) return '已到期'
   const ms = u.trialRemainingMs ?? 0
   const days = Math.floor(ms / 86400000)
@@ -221,9 +218,9 @@ onMounted(() => {
           </div>
         </n-descriptions-item>
         <n-descriptions-item label="角色">
-          {{ roleLabels[userStore.user?.role ?? ''] ?? userStore.user?.role ?? '-' }}
+          {{ userStore.user ? roleLabels[userStore.user.role] : '-' }}
         </n-descriptions-item>
-        <n-descriptions-item v-if="userStore.user?.role === 'user'" label="剩余试用期">
+        <n-descriptions-item v-if="userStore.user?.role === UserRole.User" label="剩余试用期">
           {{ trialRemainingText }}
         </n-descriptions-item>
         <n-descriptions-item label="注册时间">

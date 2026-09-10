@@ -1,5 +1,21 @@
-// 前后端共享：学习状态枚举 + 考点大纲（唯一英文 id）
+// 前后端共享：用户角色 / 学习状态枚举 + 考点大纲（唯一英文 id）
 // 由 @ez-english/shared 统一提供，前端、后端均从这里 import
+
+/** 用户角色枚举（值即数据库存储值）：user 普通用户 / member 会员 / admin 管理员 */
+export enum UserRole {
+  User = 'user',
+  Member = 'member',
+  Admin = 'admin',
+}
+
+export const userRoleValues = Object.values(UserRole)
+
+/** 角色展示名（用 Record<UserRole, string> 保证新增角色时编译期提醒） */
+export const USER_ROLE_LABELS: Record<UserRole, string> = {
+  [UserRole.User]: '普通用户',
+  [UserRole.Member]: '会员用户',
+  [UserRole.Admin]: '管理员',
+}
 
 /** 学习状态枚举（值即数据库存储值） */
 export enum KnowledgeStatus {

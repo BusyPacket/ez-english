@@ -1,13 +1,13 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { displayName as resolveDisplayName } from '@ez-english/shared'
+import { displayName as resolveDisplayName, UserRole } from '@ez-english/shared'
 import { api } from '@/api/http'
 
 export interface User {
   id: string
   email: string
   nickname: string | null
-  role: string
+  role: UserRole
   createdAt: string
   answerCount?: number
   // 免费试用期信息（普通用户）：配置天数 / 是否已到期 / 剩余毫秒（会员与管理员为 null）
@@ -51,7 +51,7 @@ export const useUserStore = defineStore('user', () => {
       return
     }
     // 普通用户试用期已到：禁用 AI（会员/管理员不受限）
-    if (user.value?.role === 'user' && user.value.trialExpired) {
+    if (user.value?.role === UserRole.User && user.value.trialExpired) {
       aiAvailable.value = false
       return
     }

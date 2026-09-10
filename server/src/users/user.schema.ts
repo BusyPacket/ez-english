@@ -1,18 +1,11 @@
 import { z } from 'zod'
+import { UserRole, userRoleValues } from '@ez-english/shared'
 
 /**
- * 用户角色 —— 字符串枚举（等价 Python 的 StrEnum）
- * - user:   普通用户
- * - member: 会员用户（保留）
- * - admin:  管理员
+ * 用户角色 —— 定义已提升到 @ez-english/shared（前后端单一权威来源），此处仅转发，
+ * 保持后端既有 `import { UserRole } from './user.schema'` 路径不变。
  */
-export enum UserRole {
-  User = 'user',
-  Member = 'member',
-  Admin = 'admin',
-}
-
-export const userRoleValues = Object.values(UserRole)
+export { UserRole, userRoleValues }
 
 /** 注册校验：用户名即邮箱，密码至少 6 位 */
 export const registerSchema = z.object({
@@ -31,7 +24,7 @@ export const loginSchema = z.object({
 export type LoginDto = z.infer<typeof loginSchema>
 
 /** 用户角色校验（供后续权限/改角色使用） */
-export const userRoleSchema = z.enum(['user', 'member', 'admin'])
+export const userRoleSchema = z.nativeEnum(UserRole)
 
 /** 昵称校验：1-20 位，仅中文/字母/数字/下划线，不允许特殊字符 */
 export const nicknameSchema = z.object({

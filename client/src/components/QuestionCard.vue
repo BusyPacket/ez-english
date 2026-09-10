@@ -6,7 +6,7 @@ import MarkdownView from './MarkdownView.vue'
 
 /** 可答题题目结构（AI 生成题 / 例题库通用） */
 export interface AnswerableQuestion {
-  /** 例题库题目唯一 id（UUID；AI 生成题无此字段，不记录答题） */
+  /** 例题库题目唯一 id（UUID；AI 生成题无此字段，改为随作答上报题目快照） */
   id?: string
   stem?: string
   choices?: string[]
@@ -109,24 +109,32 @@ function submitAnswer() {
   submitted.value = true
   // 上报答题数（后台统计，失败不影响答题体验）
   void api('/profile/answer', { method: 'POST' }).catch(() => {})
-  // 例题库题目（有 id）：记录用户答案/选项 + 判分，成功后再通知父组件刷新「已答」排序
+  // 例题库题目（有 id）：记录用户答案/选项 + 判分；
+  // AI 生成题无 id、不落题库，改传题目快照，后端答错时据此写入错题本
   const questionId = q.id
-  if (questionId) {
-    void api('/questions/answers', {
-      method: 'POST',
-      body: JSON.stringify({
-        questionId,
+  const payload = questionId
+    ? { questionId, type: props.questionType, userAnswer, isCorrect: correct }
+    : {
         type: props.questionType,
         userAnswer,
         isCorrect: correct,
-      }),
+        question: {
+          pointId: props.pointId,
+          pointTitle: props.pointTitle,
+          stem: q.stem,
+          choices: q.choices,
+          answer: q.answer,
+          analysis: q.analysis,
+        },
+      }
+  void api('/questions/answers', { method: 'POST', body: JSON.stringify(payload) })
+    .then(() => {
+      // 答错会立即进入错题本，给用户一个明确反馈（含 AI 生成题）
+      if (!correct) message.info('已自动加入错题本')
     })
-      .then(() => emit('answered', questionId, userAnswer, correct))
-      .catch(() => {})
-  } else {
-    // AI 生成题无 id、不落库：仍通知父组件，便于其本地记住作答（如「上一题」回退时恢复）
-    emit('answered', '', userAnswer, correct)
-  }
+    .catch(() => {})
+  // 通知父组件同步本地作答状态（「上一题」回退时 QuestionCard 能恢复上次的选择与判分）
+  emit('answered', questionId ?? '', userAnswer, correct)
 }
 
 // —— 收藏 ——

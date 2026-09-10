@@ -1,9 +1,22 @@
 import { Injectable, NotFoundException } from '@nestjs/common'
-import { randomUUID } from 'node:crypto'
+import { createHash, randomUUID } from 'node:crypto'
 import { and, desc, eq, inArray, like, or, sql, type SQL } from 'drizzle-orm'
 import { db, schema } from '../database/database'
 import type { Question } from '../database/schema'
 import type { CreateQuestionDto, RecordAnswerDto, UpdateQuestionDto } from './questions.schema'
+
+/** AI 生成题在错题本中的标识前缀（例题库题目为 UUID，不会与此前缀冲突） */
+const AI_KEY_PREFIX = 'ai:'
+
+/**
+ * AI 生成题的错题标识：题干指纹（归一化去空白后取 SHA-1 前 32 位）。
+ * AI 生成题不落 questions 表、没有 id，用指纹代替 id 才能沿用
+ * 「user_id + question_id」唯一索引，让同一道题重复做错累加次数。
+ */
+function aiQuestionKey(stem: string): string {
+  const normalized = stem.toLowerCase().replace(/[\s\u3000]+/g, '')
+  return `${AI_KEY_PREFIX}${createHash('sha1').update(normalized).digest('hex').slice(0, 32)}`
+}
 
 /** 数据库行 → API 响应（choices 反序列化为数组） */
 function mapRow(row: Question) {
@@ -78,30 +91,41 @@ export class QuestionsService {
     return items
   }
 
-  /** 记录一次答题（upsert：同一用户同一题仅保留一条，重复作答更新答案与判分） */
+  /**
+   * 记录一次答题（upsert：同一用户同一题仅保留一条，重复作答更新答案与判分）。
+   * 例题库题目按 questions.id 落库；AI 生成题无 id，改用题干指纹标识（仅必要字段落错题本快照）。
+   */
   async recordAnswer(userId: string, dto: RecordAnswerDto) {
     const answeredAt = new Date().toISOString()
-    await db
-      .insert(schema.questionAnswers)
-      .values({
-        id: randomUUID(),
-        userId,
-        questionId: dto.questionId,
-        type: dto.type,
-        userAnswer: dto.userAnswer,
-        isCorrect: dto.isCorrect ? 1 : 0,
-        answeredAt,
-      })
-      .onConflictDoUpdate({
-        target: [schema.questionAnswers.userId, schema.questionAnswers.questionId],
-        set: {
+    // 例题库题目用真实 id；AI 生成题用题干指纹，作为错题本的去重标识
+    const questionId = dto.questionId ?? aiQuestionKey(dto.question?.stem ?? '')
+    // AI 生成题快照：写入错题本供展示（例题库题目的内容从 questions 表联查，无需快照）
+    const snapshot = dto.questionId ? null : (dto.question ?? null)
+
+    if (dto.questionId) {
+      // 仅例题库题目记录答题状态（供例题库「已答题」标记与排序；AI 生成题不落库）
+      await db
+        .insert(schema.questionAnswers)
+        .values({
+          id: randomUUID(),
+          userId,
+          questionId,
           type: dto.type,
           userAnswer: dto.userAnswer,
           isCorrect: dto.isCorrect ? 1 : 0,
           answeredAt,
-        },
-      })
-      .run()
+        })
+        .onConflictDoUpdate({
+          target: [schema.questionAnswers.userId, schema.questionAnswers.questionId],
+          set: {
+            type: dto.type,
+            userAnswer: dto.userAnswer,
+            isCorrect: dto.isCorrect ? 1 : 0,
+            answeredAt,
+          },
+        })
+        .run()
+    }
 
     // 答错则自动计入错题本：同一题重复做错累加次数并更新最近错答；答对不清除，由用户手动移出
     if (!dto.isCorrect) {
@@ -110,7 +134,14 @@ export class QuestionsService {
         .values({
           id: randomUUID(),
           userId,
-          questionId: dto.questionId,
+          questionId,
+          pointId: snapshot?.pointId ?? null,
+          pointTitle: snapshot?.pointTitle ?? null,
+          type: snapshot ? dto.type : null,
+          stem: snapshot?.stem ?? null,
+          choices: snapshot?.choices?.length ? JSON.stringify(snapshot.choices) : null,
+          answer: snapshot?.answer ?? null,
+          analysis: snapshot?.analysis?.trim() ? snapshot.analysis : null,
           lastWrongAnswer: dto.userAnswer,
           wrongCount: 1,
           createdAt: answeredAt,
@@ -119,6 +150,14 @@ export class QuestionsService {
         .onConflictDoUpdate({
           target: [schema.wrongQuestions.userId, schema.wrongQuestions.questionId],
           set: {
+            // 快照随最近一次做错刷新；例题库题目恒为 null（内容以 questions 表为准）
+            pointId: snapshot?.pointId ?? null,
+            pointTitle: snapshot?.pointTitle ?? null,
+            type: snapshot ? dto.type : null,
+            stem: snapshot?.stem ?? null,
+            choices: snapshot?.choices?.length ? JSON.stringify(snapshot.choices) : null,
+            answer: snapshot?.answer ?? null,
+            analysis: snapshot?.analysis?.trim() ? snapshot.analysis : null,
             lastWrongAnswer: dto.userAnswer,
             wrongCount: sql`${schema.wrongQuestions.wrongCount} + 1`,
             updatedAt: answeredAt,
@@ -127,35 +166,64 @@ export class QuestionsService {
         .run()
     }
 
-    return { questionId: dto.questionId, answered: true }
+    return { questionId, answered: true }
   }
 
-  /** 当前用户错题列表（仅本人；附带题目详情与错答信息，按最近做错时间倒序） */
+  /**
+   * 当前用户错题列表（仅本人；按最近做错时间倒序）。
+   * 例题库题目从 questions 表联查最新内容，AI 生成题取落库快照，两者对外结构一致。
+   */
   async listWrong(userId: string) {
     const rows = await db
       .select({
-        id: schema.questions.id,
-        type: schema.questions.type,
-        pointId: schema.questions.pointId,
-        pointTitle: schema.questions.pointTitle,
-        stem: schema.questions.stem,
-        choices: schema.questions.choices,
-        answer: schema.questions.answer,
-        analysis: schema.questions.analysis,
+        questionId: schema.wrongQuestions.questionId,
         lastWrongAnswer: schema.wrongQuestions.lastWrongAnswer,
         wrongCount: schema.wrongQuestions.wrongCount,
         updatedAt: schema.wrongQuestions.updatedAt,
+        // 例题库题目（questions 表联查）
+        bankType: schema.questions.type,
+        bankPointId: schema.questions.pointId,
+        bankPointTitle: schema.questions.pointTitle,
+        bankStem: schema.questions.stem,
+        bankChoices: schema.questions.choices,
+        bankAnswer: schema.questions.answer,
+        bankAnalysis: schema.questions.analysis,
+        // AI 生成题快照
+        snapshotPointId: schema.wrongQuestions.pointId,
+        snapshotPointTitle: schema.wrongQuestions.pointTitle,
+        snapshotType: schema.wrongQuestions.type,
+        snapshotStem: schema.wrongQuestions.stem,
+        snapshotChoices: schema.wrongQuestions.choices,
+        snapshotAnswer: schema.wrongQuestions.answer,
+        snapshotAnalysis: schema.wrongQuestions.analysis,
       })
       .from(schema.wrongQuestions)
-      .innerJoin(schema.questions, eq(schema.wrongQuestions.questionId, schema.questions.id))
+      .leftJoin(schema.questions, eq(schema.wrongQuestions.questionId, schema.questions.id))
       .where(eq(schema.wrongQuestions.userId, userId))
       .orderBy(desc(schema.wrongQuestions.updatedAt))
       .all()
 
-    return rows.map((r) => ({
-      ...r,
-      choices: r.choices ? (JSON.parse(r.choices) as string[]) : [],
-    }))
+    return rows
+      .map((r) => {
+        const choices = r.bankChoices ?? r.snapshotChoices
+        return {
+          // id 即题目标识：例题库为题目 id，AI 生成题为题干指纹（移出错题本沿用同一标识）
+          id: r.questionId,
+          type: r.bankType ?? r.snapshotType ?? 'single',
+          pointId: r.bankPointId ?? r.snapshotPointId ?? '',
+          pointTitle: r.bankPointTitle ?? r.snapshotPointTitle ?? null,
+          stem: r.bankStem ?? r.snapshotStem ?? '',
+          choices: choices ? (JSON.parse(choices) as string[]) : [],
+          answer: r.bankAnswer ?? r.snapshotAnswer ?? '',
+          analysis: r.bankAnalysis ?? r.snapshotAnalysis ?? null,
+          // 来源：bank 例题库 / ai AI 生成题（前端据此打标）
+          source: r.questionId.startsWith(AI_KEY_PREFIX) ? 'ai' : 'bank',
+          lastWrongAnswer: r.lastWrongAnswer,
+          wrongCount: r.wrongCount,
+          updatedAt: r.updatedAt,
+        }
+      })
+      .filter((r) => r.stem)
   }
 
   /** 把一道题移出错题本（仅限本人） */

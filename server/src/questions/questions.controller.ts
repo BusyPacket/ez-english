@@ -65,7 +65,7 @@ export class QuestionsController {
     return this.questionsService.list(request?.user.sub ?? '', pointId || undefined)
   }
 
-  /** 记录答题（用户作答例题库题目；upsert，同一题重复作答更新答案） */
+  /** 记录答题（例题库题目带 id；AI 生成题带题目快照；答错自动计入错题本） */
   @Post('answers')
   recordAnswer(
     @Body(new ZodValidationPipe(recordAnswerSchema)) dto: RecordAnswerDto,
@@ -74,7 +74,7 @@ export class QuestionsController {
     return this.questionsService.recordAnswer(request.user.sub, dto)
   }
 
-  /** 我的错题列表（仅当前用户，按最近做错时间倒序） */
+  /** 我的错题列表（例题库题目 + AI 生成题，仅当前用户，按最近做错时间倒序） */
   @Get('wrong')
   listWrong(@Req() request: AuthedRequest) {
     return this.questionsService.listWrong(request.user.sub)

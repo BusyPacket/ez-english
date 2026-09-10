@@ -14,6 +14,8 @@ interface WrongQuestion {
   choices: string[]
   answer: string
   analysis: string | null
+  /** 来源：bank 例题库 / ai AI 生成题 */
+  source: 'bank' | 'ai'
   /** 最近一次答错的答案 */
   lastWrongAnswer: string
   /** 累计答错次数 */
@@ -81,6 +83,9 @@ onMounted(fetchList)
           <n-tag v-if="w.pointTitle" size="small" type="info" :bordered="false">{{
             w.pointTitle
           }}</n-tag>
+          <n-tag v-if="w.source === 'ai'" size="small" type="warning" :bordered="false"
+            >AI 生成</n-tag
+          >
           <n-tag size="small" :bordered="false">错过 {{ w.wrongCount }} 次</n-tag>
           <span class="wrong-time">{{ dayjs(w.updatedAt).format('YYYY-MM-DD HH:mm') }}</span>
         </div>

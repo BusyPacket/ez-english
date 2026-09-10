@@ -137,7 +137,7 @@ export const questionAnswers = sqliteTable(
   (table) => [uniqueIndex('question_answers_user_question_uk').on(table.userId, table.questionId)],
 )
 
-// 错题表（每用户每题一条：例题库作答错误时自动记录，仅本人可见）
+// 错题表（每用户每题一条：作答错误时自动记录，仅本人可见）
 export const wrongQuestions = sqliteTable(
   'wrong_questions',
   {
@@ -145,8 +145,25 @@ export const wrongQuestions = sqliteTable(
     id: text('id').primaryKey(),
     // 用户 id（关联 users.id）
     userId: text('user_id').notNull(),
-    // 题目 id（关联 questions.id）
+    // 题目标识：例题库题目为 questions.id；AI 生成题不落 questions 表，
+    // 用 `ai:<题干指纹>` 作为标识（见 questions.service 的 aiQuestionKey），
+    // 从而沿用下方唯一索引，同一道 AI 题重复做错仍能累加次数
     questionId: text('question_id').notNull(),
+    // —— 以下为 AI 生成题的题目快照（例题库题目可留空，展示时从 questions 表联查）——
+    // 考点 id（来自 /practice?point=）
+    pointId: text('point_id'),
+    // 考点中文标题
+    pointTitle: text('point_title'),
+    // 题型：single / fill / judge
+    type: text('type'),
+    // 题干
+    stem: text('stem'),
+    // 选项（JSON 数组字符串，仅选择题）
+    choices: text('choices'),
+    // 正确答案
+    answer: text('answer'),
+    // 解析
+    analysis: text('analysis'),
     // 最近一次答错的答案（单选为字母，判断为「正确/错误」，填空为输入文本）
     lastWrongAnswer: text('last_wrong_answer').notNull(),
     // 累计答错次数

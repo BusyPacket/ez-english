@@ -107,8 +107,8 @@ function prevQuestion() {
 }
 
 /**
- * AI 生题作答完成：AI 题无 id、不落库，把作答状态写回队列中的题目对象，
- * 这样「上一题」回退时 QuestionCard 能恢复上次的选择与判分结果
+ * AI 生题作答完成：把作答状态写回队列中的题目对象，这样「上一题」回退时
+ * QuestionCard 能恢复上次的选择与判分结果（答错的题已由后端记入错题本）
  */
 function handleAiAnswered(_questionId: string, userAnswer: string, isCorrect: boolean) {
   const q = queue.current.value

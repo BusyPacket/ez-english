@@ -123,6 +123,9 @@ function submitAnswer() {
     })
       .then(() => emit('answered', questionId, userAnswer, correct))
       .catch(() => {})
+  } else {
+    // AI 生成题无 id、不落库：仍通知父组件，便于其本地记住作答（如「上一题」回退时恢复）
+    emit('answered', '', userAnswer, correct)
   }
 }
 

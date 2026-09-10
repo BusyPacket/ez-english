@@ -66,6 +66,7 @@ const queue = usePrefetchQueue<AnswerableQuestion>({
 const currentQuestion = queue.current
 const generating = queue.loading
 const hasCachedNext = queue.hasNext
+const hasPrevQuestion = queue.hasPrev
 const lastGenError = queue.lastError
 /** 队列当前长度（仅用于控制「生成/重新生成」按钮状态，不向用户展示数量） */
 const queueLen = computed(() => queue.items.value.length)
@@ -98,6 +99,23 @@ function startGeneration() {
 /** 进入下一题（模板按钮）：消费队首，队列自动在后台补一题 */
 function nextQuestion() {
   queue.next()
+}
+
+/** 回到上一题（模板按钮）：从历史栈取回，不重新请求 AI，零等待 */
+function prevQuestion() {
+  queue.prev()
+}
+
+/**
+ * AI 生题作答完成：AI 题无 id、不落库，把作答状态写回队列中的题目对象，
+ * 这样「上一题」回退时 QuestionCard 能恢复上次的选择与判分结果
+ */
+function handleAiAnswered(_questionId: string, userAnswer: string, isCorrect: boolean) {
+  const q = queue.current.value
+  if (!q) return
+  q.answered = true
+  q.userAnswer = userAnswer
+  q.isCorrect = isCorrect
 }
 
 /** 重新出题（模板在出题失败、且暂无可用的下一题时显示） */
@@ -295,8 +313,12 @@ onMounted(() => {
             :question-type="queueType"
             :point-id="pointId"
             :point-title="practiceTitle"
+            @answered="handleAiAnswered"
           />
           <div class="queue-bar">
+            <n-button size="small" :disabled="!hasPrevQuestion" @click="prevQuestion"
+              >上一题</n-button
+            >
             <template v-if="hasCachedNext">
               <n-button type="primary" size="small" @click="nextQuestion">下一题</n-button>
             </template>

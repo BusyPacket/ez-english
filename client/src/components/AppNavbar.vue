@@ -94,9 +94,14 @@ const renderMenuLink = (option: {
         @update:value="handleMenuSelect"
       />
       <n-space v-if="userStore.isLoggedIn" align="center">
-        <n-a :strong="true" class="nav-username" @click="router.push('/profile')">{{
-          userStore.displayName
-        }}</n-a>
+        <n-a
+          :strong="true"
+          class="nav-username"
+          :title="userStore.displayName"
+          @click="router.push('/profile')"
+        >
+          {{ userStore.displayName }}
+        </n-a>
       </n-space>
       <n-button v-else quaternary size="small" @click="router.push('/login')">登录/注册</n-button>
       <TimerWidget />
@@ -193,7 +198,9 @@ const renderMenuLink = (option: {
 /* 用户名：与右侧后台菜单项字号/行高一致，保证垂直对齐 */
 .nav-username {
   display: inline-block;
-  max-width: 100%;
+  /* 必须给绝对上限：父级 n-space 宽度由内容撑开（fit-content），max-width: 100% 等于无约束，
+     长昵称会把导航栏顶宽、页面出现横向滚动条 */
+  max-width: 160px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -202,18 +209,34 @@ const renderMenuLink = (option: {
   line-height: 28px;
 }
 
-/* 汉堡按钮：默认隐藏，移动端显示 */
+/* 汉堡按钮：默认隐藏，窗口不够宽时显示 */
 .mobile-menu-btn {
   display: none;
 }
 
-/* 移动端：隐藏横向菜单，显示汉堡按钮，收紧间距 */
-@media (max-width: 768px) {
+/*
+ * 完整导航栏按默认间距需要约 992px，窗口更窄时会把页面顶宽、出现横向滚动条。
+ * 这里通过压缩间距（而不是隐藏菜单）把需求宽度降到 ~750px，保证 768px 以上都能完整显示。
+ */
+@media (max-width: 1023px) {
   .navbar-inner {
     gap: 8px;
     padding: 0 8px;
   }
 
+  .nav-username {
+    max-width: 100px;
+  }
+
+  /* 菜单项默认左右各 20px 内边距，6 项合计 240px，是导航栏最占地方的部分 */
+  .nav-menu :deep(.n-menu-item-content) {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+}
+
+/* 移动端：横向菜单收进汉堡菜单，隐藏用户名（汉堡里以「我的」代替） */
+@media (max-width: 768px) {
   .nav-menu {
     display: none;
   }

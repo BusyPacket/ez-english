@@ -85,10 +85,10 @@ export const useUserStore = defineStore('user', () => {
     void refreshAiAvailable()
   }
 
-  async function register(email: string, password: string) {
+  async function register(email: string, password: string, nickname: string) {
     await api<User>('/auth/register', {
       method: 'POST',
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, nickname }),
     })
   }
 

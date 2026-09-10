@@ -7,10 +7,19 @@ import { UserRole, userRoleValues } from '@ez-english/shared'
  */
 export { UserRole, userRoleValues }
 
-/** 注册校验：用户名即邮箱，密码至少 6 位 */
+/** 昵称校验规则（注册与改昵称共用）：1-20 位，仅中文/字母/数字/下划线 */
+const nicknameField = z
+  .string()
+  .trim()
+  .min(1, '昵称不能为空')
+  .max(20, '昵称最长 20 个字符')
+  .regex(/^[\u4e00-\u9fa5a-zA-Z0-9_]+$/, '昵称仅支持中文、字母、数字和下划线，不能包含特殊字符')
+
+/** 注册校验：用户名即邮箱，密码至少 6 位，昵称必填 */
 export const registerSchema = z.object({
   email: z.string().trim().toLowerCase().email('邮箱格式不正确'),
   password: z.string().min(6, '密码至少 6 位'),
+  nickname: nicknameField,
 })
 
 export type RegisterDto = z.infer<typeof registerSchema>
@@ -27,14 +36,7 @@ export type LoginDto = z.infer<typeof loginSchema>
 export const userRoleSchema = z.nativeEnum(UserRole)
 
 /** 昵称校验：1-20 位，仅中文/字母/数字/下划线，不允许特殊字符 */
-export const nicknameSchema = z.object({
-  nickname: z
-    .string()
-    .trim()
-    .min(1, '昵称不能为空')
-    .max(20, '昵称最长 20 个字符')
-    .regex(/^[\u4e00-\u9fa5a-zA-Z0-9_]+$/, '昵称仅支持中文、字母、数字和下划线，不能包含特殊字符'),
-})
+export const nicknameSchema = z.object({ nickname: nicknameField })
 
 export type NicknameDto = z.infer<typeof nicknameSchema>
 

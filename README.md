@@ -72,27 +72,27 @@ pnpm check:quick    # 跳过依赖校验，快速检查
 
 启动后，REST 接口统一挂在 `/api` 前缀下：
 
-| 方法   | 路径                 | 说明                                                       |
-| ------ | -------------------- | ---------------------------------------------------------- |
-| GET    | `/api/health`        | 健康检查                                                   |
-| POST   | `/api/auth/register` | 注册（body: `{ "email", "password" }`，Zod 校验）          |
-| GET    | `/api/progress`      | 获取全部学习进度                                           |
-| GET    | `/api/progress/:id`  | 获取单个考点进度                                           |
-| PUT    | `/api/progress/:id`  | 更新/创建进度（body: `{ "status": "learned" }`，Zod 校验） |
-| DELETE | `/api/progress/:id`  | 删除进度                                                   |
+| 方法   | 路径                 | 说明                                                          |
+| ------ | -------------------- | ------------------------------------------------------------- |
+| GET    | `/api/health`        | 健康检查                                                      |
+| POST   | `/api/auth/register` | 注册（body: `{ "email", "password", "nickname" }`，Zod 校验） |
+| GET    | `/api/progress`      | 获取全部学习进度                                              |
+| GET    | `/api/progress/:id`  | 获取单个考点进度                                              |
+| PUT    | `/api/progress/:id`  | 更新/创建进度（body: `{ "status": "learned" }`，Zod 校验）    |
+| DELETE | `/api/progress/:id`  | 删除进度                                                      |
 
 SQLite 数据库文件位于 `server/data/ez-english.db`（首次启动自动创建，已 gitignore）。
 
 ## 用户表需求
 
-| 需求     | 说明                                                                       |
-| -------- | -------------------------------------------------------------------------- |
-| 用户名   | 即邮箱（`email`），唯一                                                    |
-| 密码     | 至少 6 位（存储为 scrypt 哈希）                                            |
-| 主键     | `id`，UUID（应用生成，`node:crypto` 的 `randomUUID`）                      |
-| 昵称     | `nickname`，备用字段，可空                                                 |
-| 角色     | StrEnum：`user` 普通用户 / `member` 会员用户（保留）/ `admin` 管理员       |
-| 注册时间 | `created_at`，带时区的 UTC 时间（ISO 8601，如 `2026-08-17T09:14:15.084Z`） |
+| 需求     | 说明                                                                                         |
+| -------- | -------------------------------------------------------------------------------------------- |
+| 用户名   | 即邮箱（`email`），唯一                                                                      |
+| 密码     | 至少 6 位（存储为 scrypt 哈希）                                                              |
+| 主键     | `id`，UUID（应用生成，`node:crypto` 的 `randomUUID`）                                        |
+| 昵称     | `nickname`，注册时必填（1-20 位，仅中文/字母/数字/下划线），唯一且区分大小写；历史用户可为空 |
+| 角色     | StrEnum：`user` 普通用户 / `member` 会员用户（保留）/ `admin` 管理员                         |
+| 注册时间 | `created_at`，带时区的 UTC 时间（ISO 8601，如 `2026-08-17T09:14:15.084Z`）                   |
 
 ## 数据流
 

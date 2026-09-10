@@ -6,8 +6,8 @@ export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   // 用户名即邮箱
   email: text('email').notNull().unique(),
-  // 昵称（备用字段）
-  nickname: text('nickname'),
+  // 昵称（唯一且区分大小写；SQLite 的 UNIQUE 允许多个 NULL，兼容历史无昵称用户）
+  nickname: text('nickname').unique(),
   passwordHash: text('password_hash').notNull(),
   role: text('role').notNull().default('user'),
   // 注册时间：带时区的 UTC 时间（ISO 8601）

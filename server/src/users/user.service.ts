@@ -11,11 +11,21 @@ import { SettingsService } from '../settings/settings.service'
 import { UserRole, userRoleValues, type RegisterDto } from './user.schema'
 import { beijingDateKey, DAY_MS } from '../common/date-key'
 
+/** 识别 SQLite 唯一约束冲突：并发写入时由 DB 索引兑底，转成 409 而不是 500 */
+function isUniqueConflict(e: unknown): boolean {
+  return e instanceof Error && /UNIQUE constraint failed/i.test(e.message)
+}
+
 @Injectable()
 export class UserService {
   constructor(private readonly settingsService: SettingsService) {}
   async findByEmail(email: string) {
     return db.select().from(schema.users).where(eq(schema.users.email, email)).get()
+  }
+
+  /** 按昵称查询用户（昵称唯一且区分大小写，与 DB 唯一索引一致） */
+  async findByNickname(nickname: string) {
+    return db.select().from(schema.users).where(eq(schema.users.nickname, nickname)).get()
   }
 
   /** 分页查询用户列表（不含密码），支持按邮箱/昵称模糊搜索、按角色筛选 */
@@ -183,6 +193,11 @@ export class UserService {
 
   /** 修改当前用户昵称，返回更新后的用户信息（不含密码） */
   async updateNickname(id: string, nickname: string) {
+    // 昵称唯一（区分大小写）：被他人占用时拒绝；改回自己的昵称不算冲突
+    const taken = await this.findByNickname(nickname)
+    if (taken && taken.id !== id) {
+      throw new ConflictException('该昵称已被使用')
+    }
     const updated = await db
       .update(schema.users)
       .set({ nickname })
@@ -195,6 +210,11 @@ export class UserService {
         createdAt: schema.users.createdAt,
       })
       .get()
+      .catch((e: unknown): never => {
+        // 并发下改成同一昵称：DB 唯一索引兑底
+        if (isUniqueConflict(e)) throw new ConflictException('该昵称已被使用')
+        throw e
+      })
     if (!updated) {
       throw new NotFoundException('用户不存在')
     }
@@ -238,6 +258,9 @@ export class UserService {
     if (existing) {
       throw new ConflictException('该邮箱已注册')
     }
+    if (await this.findByNickname(dto.nickname)) {
+      throw new ConflictException('该昵称已被使用')
+    }
 
     const passwordHash = this.hashPassword(dto.password)
     // 注册时间：带时区的 UTC 时间（ISO 8601，如 2026-08-17T09:14:15.084Z）
@@ -248,13 +271,18 @@ export class UserService {
       .values({
         id: randomUUID(),
         email: dto.email,
-        nickname: null,
+        nickname: dto.nickname,
         passwordHash,
         role: UserRole.User,
         createdAt,
       })
       .returning()
       .get()
+      .catch((e: unknown): never => {
+        // 并发下同时注册同一昵称/邮箱：DB 唯一索引兑底
+        if (isUniqueConflict(e)) throw new ConflictException('该昵称或邮箱已被使用')
+        throw e
+      })
 
     return {
       id: inserted.id,

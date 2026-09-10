@@ -76,26 +76,53 @@ const renderMenuLink = (option: {
   <n-layout-header bordered class="navbar">
     <div class="navbar-inner">
       <div class="brand">📚 ez-english</div>
-      <n-menu class="nav-menu" mode="horizontal" :options="mainMenuOptions" :value="activeKey"
-        :render-label="renderMenuLink" @update:value="handleMenuSelect" />
+      <n-menu
+        class="nav-menu"
+        mode="horizontal"
+        :options="mainMenuOptions"
+        :value="activeKey"
+        :render-label="renderMenuLink"
+        @update:value="handleMenuSelect"
+      />
       <div class="spacer" />
-      <n-menu v-if="adminMenuOptions.length" class="nav-menu nav-menu-right" mode="horizontal"
-        :options="adminMenuOptions" :value="activeKey" :render-label="renderMenuLink"
-        @update:value="handleMenuSelect" />
+      <n-menu
+        v-if="adminMenuOptions.length"
+        class="nav-menu nav-menu-right"
+        mode="horizontal"
+        :options="adminMenuOptions"
+        :value="activeKey"
+        :render-label="renderMenuLink"
+        @update:value="handleMenuSelect"
+      />
       <n-space v-if="userStore.isLoggedIn" align="center">
-        <n-a :strong="true" class="nav-username" :title="userStore.displayName" @click="router.push('/profile')">
+        <n-a
+          :strong="true"
+          class="nav-username"
+          :title="userStore.displayName"
+          @click="router.push('/profile')"
+        >
           {{ userStore.displayName }}
         </n-a>
       </n-space>
       <n-button v-else quaternary size="small" @click="router.push('/login')">登录/注册</n-button>
       <TimerWidget />
-      <n-button quaternary circle :title="themeStore.isDark ? '切换到浅色模式' : '切换到深色模式'" @click="themeStore.toggle">
+      <n-button
+        quaternary
+        circle
+        :title="themeStore.isDark ? '切换到浅色模式' : '切换到深色模式'"
+        @click="themeStore.toggle"
+      >
         <template #icon>
           <span class="theme-icon">{{ themeStore.isDark ? '🌙' : '☀️' }}</span>
         </template>
       </n-button>
-      <n-dropdown :options="mobileOptions" :show="showMobileMenu" trigger="click" @select="handleMenuSelect"
-        @update:show="(v: boolean) => (showMobileMenu = v)">
+      <n-dropdown
+        :options="mobileOptions"
+        :show="showMobileMenu"
+        trigger="click"
+        @select="handleMenuSelect"
+        @update:show="(v: boolean) => (showMobileMenu = v)"
+      >
         <n-button quaternary circle class="mobile-menu-btn" title="菜单">
           <template #icon>
             <span class="menu-icon">☰</span>

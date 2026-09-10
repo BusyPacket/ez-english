@@ -243,8 +243,12 @@ onMounted(() => {
             <div style="width: 100%">
               <div class="model-row">
                 <n-select v-model:value="aiModel" :options="modelOptions" class="model-select" />
-                <n-button class="model-refresh-btn" secondary :loading="refreshingModels" title="刷新模型列表"
-                  @click="refreshModelsManually(hasApiKey)">🔄</n-button>
+                <n-button class="model-refresh-btn" secondary :disabled="refreshingModels" title="刷新模型列表"
+                  @click="refreshModelsManually(hasApiKey)">
+                  <span class="model-refresh-icon" :class="{ 'is-spinning': refreshingModels }">
+                    🔄
+                  </span>
+                </n-button>
               </div>
               <div v-if="modelSource === 'live'" class="model-src-live">✔ 已实时获取最新模型</div>
               <div v-else class="model-src-fallback">⚠ 未配置有效 API Key，暂显示内置模型</div>
@@ -374,7 +378,27 @@ onMounted(() => {
   width: 34px;
   height: 34px;
   padding: 0;
+}
+
+/*
+ * 刷新中让图标自转，而不是用 n-button 的 loading：
+ * naive-ui 的 loading 是在内容旁“插入”一个 loading 图标（两者共存），
+ * 在 34px 的正方形按钮里会把内容挤出去。
+ */
+.model-refresh-icon {
+  display: inline-block;
   font-size: 15px;
+  line-height: 1;
+}
+
+.model-refresh-icon.is-spinning {
+  animation: model-refresh-spin 0.8s linear infinite;
+}
+
+@keyframes model-refresh-spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .model-src-live {

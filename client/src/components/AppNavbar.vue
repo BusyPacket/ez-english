@@ -16,6 +16,7 @@ const mainMenuOptions = [
   { label: '学习', key: '/progress' },
   { label: '真题', key: '/exam-paper' },
   { label: '收藏', key: '/favorites' },
+  { label: '错题', key: '/wrong' },
   { label: '排行', key: '/leaderboard' },
   { label: '反馈', key: '/feedback' },
 ]
@@ -75,53 +76,26 @@ const renderMenuLink = (option: {
   <n-layout-header bordered class="navbar">
     <div class="navbar-inner">
       <div class="brand">📚 ez-english</div>
-      <n-menu
-        class="nav-menu"
-        mode="horizontal"
-        :options="mainMenuOptions"
-        :value="activeKey"
-        :render-label="renderMenuLink"
-        @update:value="handleMenuSelect"
-      />
+      <n-menu class="nav-menu" mode="horizontal" :options="mainMenuOptions" :value="activeKey"
+        :render-label="renderMenuLink" @update:value="handleMenuSelect" />
       <div class="spacer" />
-      <n-menu
-        v-if="adminMenuOptions.length"
-        class="nav-menu nav-menu-right"
-        mode="horizontal"
-        :options="adminMenuOptions"
-        :value="activeKey"
-        :render-label="renderMenuLink"
-        @update:value="handleMenuSelect"
-      />
+      <n-menu v-if="adminMenuOptions.length" class="nav-menu nav-menu-right" mode="horizontal"
+        :options="adminMenuOptions" :value="activeKey" :render-label="renderMenuLink"
+        @update:value="handleMenuSelect" />
       <n-space v-if="userStore.isLoggedIn" align="center">
-        <n-a
-          :strong="true"
-          class="nav-username"
-          :title="userStore.displayName"
-          @click="router.push('/profile')"
-        >
+        <n-a :strong="true" class="nav-username" :title="userStore.displayName" @click="router.push('/profile')">
           {{ userStore.displayName }}
         </n-a>
       </n-space>
       <n-button v-else quaternary size="small" @click="router.push('/login')">登录/注册</n-button>
       <TimerWidget />
-      <n-button
-        quaternary
-        circle
-        :title="themeStore.isDark ? '切换到浅色模式' : '切换到深色模式'"
-        @click="themeStore.toggle"
-      >
+      <n-button quaternary circle :title="themeStore.isDark ? '切换到浅色模式' : '切换到深色模式'" @click="themeStore.toggle">
         <template #icon>
           <span class="theme-icon">{{ themeStore.isDark ? '🌙' : '☀️' }}</span>
         </template>
       </n-button>
-      <n-dropdown
-        :options="mobileOptions"
-        :show="showMobileMenu"
-        trigger="click"
-        @select="handleMenuSelect"
-        @update:show="(v: boolean) => (showMobileMenu = v)"
-      >
+      <n-dropdown :options="mobileOptions" :show="showMobileMenu" trigger="click" @select="handleMenuSelect"
+        @update:show="(v: boolean) => (showMobileMenu = v)">
         <n-button quaternary circle class="mobile-menu-btn" title="菜单">
           <template #icon>
             <span class="menu-icon">☰</span>
@@ -166,6 +140,15 @@ const renderMenuLink = (option: {
   width: fit-content;
   max-width: fit-content;
   flex: 0 0 auto;
+}
+
+/*
+ * 菜单项默认左右各 20px 内边距，8 项合计占约 320px，是导航栏最占地方的部分；
+ * 收紧到 12px，避免 1024px 左右的窗口出现横向滚动条（窄屏下会进一步收到 6px）。
+ */
+.nav-menu :deep(.n-menu-item-content) {
+  padding-left: 12px;
+  padding-right: 12px;
 }
 
 /* 右侧「后台」菜单：高度与用户名一致（28px），字形与用户名完全对齐 */

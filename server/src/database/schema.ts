@@ -137,6 +137,29 @@ export const questionAnswers = sqliteTable(
   (table) => [uniqueIndex('question_answers_user_question_uk').on(table.userId, table.questionId)],
 )
 
+// 错题表（每用户每题一条：例题库作答错误时自动记录，仅本人可见）
+export const wrongQuestions = sqliteTable(
+  'wrong_questions',
+  {
+    // 主键：UUID（由应用生成，node:crypto randomUUID）
+    id: text('id').primaryKey(),
+    // 用户 id（关联 users.id）
+    userId: text('user_id').notNull(),
+    // 题目 id（关联 questions.id）
+    questionId: text('question_id').notNull(),
+    // 最近一次答错的答案（单选为字母，判断为「正确/错误」，填空为输入文本）
+    lastWrongAnswer: text('last_wrong_answer').notNull(),
+    // 累计答错次数
+    wrongCount: integer('wrong_count').notNull().default(1),
+    // 首次做错（加入错题本）时间：带时区的 UTC 时间（ISO 8601）
+    createdAt: text('created_at').notNull(),
+    // 最近一次做错时间：带时区的 UTC 时间（ISO 8601）
+    updatedAt: text('updated_at').notNull(),
+  },
+  // 同一用户同一道题只保留一条（重复做错累加次数）
+  (table) => [uniqueIndex('wrong_questions_user_question_uk').on(table.userId, table.questionId)],
+)
+
 // 每日答题统计表（用户 × 日期 联合主键）
 // 仅当用户在某天有答题时插入一行；没有答题的日期不落库，节省存储空间。
 // 日期语义：北京时间（UTC+8）的 YYYY-MM-DD。

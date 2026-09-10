@@ -102,7 +102,77 @@ export class QuestionsService {
         },
       })
       .run()
+
+    // 答错则自动计入错题本：同一题重复做错累加次数并更新最近错答；答对不清除，由用户手动移出
+    if (!dto.isCorrect) {
+      await db
+        .insert(schema.wrongQuestions)
+        .values({
+          id: randomUUID(),
+          userId,
+          questionId: dto.questionId,
+          lastWrongAnswer: dto.userAnswer,
+          wrongCount: 1,
+          createdAt: answeredAt,
+          updatedAt: answeredAt,
+        })
+        .onConflictDoUpdate({
+          target: [schema.wrongQuestions.userId, schema.wrongQuestions.questionId],
+          set: {
+            lastWrongAnswer: dto.userAnswer,
+            wrongCount: sql`${schema.wrongQuestions.wrongCount} + 1`,
+            updatedAt: answeredAt,
+          },
+        })
+        .run()
+    }
+
     return { questionId: dto.questionId, answered: true }
+  }
+
+  /** 当前用户错题列表（仅本人；附带题目详情与错答信息，按最近做错时间倒序） */
+  async listWrong(userId: string) {
+    const rows = await db
+      .select({
+        id: schema.questions.id,
+        type: schema.questions.type,
+        pointId: schema.questions.pointId,
+        pointTitle: schema.questions.pointTitle,
+        stem: schema.questions.stem,
+        choices: schema.questions.choices,
+        answer: schema.questions.answer,
+        analysis: schema.questions.analysis,
+        lastWrongAnswer: schema.wrongQuestions.lastWrongAnswer,
+        wrongCount: schema.wrongQuestions.wrongCount,
+        updatedAt: schema.wrongQuestions.updatedAt,
+      })
+      .from(schema.wrongQuestions)
+      .innerJoin(schema.questions, eq(schema.wrongQuestions.questionId, schema.questions.id))
+      .where(eq(schema.wrongQuestions.userId, userId))
+      .orderBy(desc(schema.wrongQuestions.updatedAt))
+      .all()
+
+    return rows.map((r) => ({
+      ...r,
+      choices: r.choices ? (JSON.parse(r.choices) as string[]) : [],
+    }))
+  }
+
+  /** 把一道题移出错题本（仅限本人） */
+  async removeWrong(userId: string, questionId: string) {
+    const result = await db
+      .delete(schema.wrongQuestions)
+      .where(
+        and(
+          eq(schema.wrongQuestions.userId, userId),
+          eq(schema.wrongQuestions.questionId, questionId),
+        ),
+      )
+      .run()
+    if (result.rowsAffected === 0) {
+      throw new NotFoundException('错题记录不存在')
+    }
+    return { questionId }
   }
 
   /** 随机抽取 N 道题（供练习抽题，可限定考点） */

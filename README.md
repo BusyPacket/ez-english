@@ -72,14 +72,16 @@ pnpm check:quick    # 跳过依赖校验，快速检查
 
 启动后，REST 接口统一挂在 `/api` 前缀下：
 
-| 方法   | 路径                 | 说明                                                          |
-| ------ | -------------------- | ------------------------------------------------------------- |
-| GET    | `/api/health`        | 健康检查                                                      |
-| POST   | `/api/auth/register` | 注册（body: `{ "email", "password", "nickname" }`，Zod 校验） |
-| GET    | `/api/progress`      | 获取全部学习进度                                              |
-| GET    | `/api/progress/:id`  | 获取单个考点进度                                              |
-| PUT    | `/api/progress/:id`  | 更新/创建进度（body: `{ "status": "learned" }`，Zod 校验）    |
-| DELETE | `/api/progress/:id`  | 删除进度                                                      |
+| 方法   | 路径                               | 说明                                                          |
+| ------ | ---------------------------------- | ------------------------------------------------------------- |
+| GET    | `/api/health`                      | 健康检查                                                      |
+| POST   | `/api/auth/register`               | 注册（body: `{ "email", "password", "nickname" }`，Zod 校验） |
+| GET    | `/api/questions/wrong`             | 我的错题列表（仅本人）                                        |
+| DELETE | `/api/questions/wrong/:questionId` | 移出错题本（仅本人）                                          |
+| GET    | `/api/progress`                    | 获取全部学习进度                                              |
+| GET    | `/api/progress/:id`                | 获取单个考点进度                                              |
+| PUT    | `/api/progress/:id`                | 更新/创建进度（body: `{ "status": "learned" }`，Zod 校验）    |
+| DELETE | `/api/progress/:id`                | 删除进度                                                      |
 
 SQLite 数据库文件位于 `server/data/ez-english.db`（首次启动自动创建，已 gitignore）。
 

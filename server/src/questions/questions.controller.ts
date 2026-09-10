@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  HttpCode,
   Param,
   Post,
   Put,
@@ -71,6 +72,19 @@ export class QuestionsController {
     @Req() request: AuthedRequest,
   ) {
     return this.questionsService.recordAnswer(request.user.sub, dto)
+  }
+
+  /** 我的错题列表（仅当前用户，按最近做错时间倒序） */
+  @Get('wrong')
+  listWrong(@Req() request: AuthedRequest) {
+    return this.questionsService.listWrong(request.user.sub)
+  }
+
+  /** 移出错题本（仅当前用户） */
+  @Delete('wrong/:questionId')
+  @HttpCode(204)
+  removeWrong(@Req() request: AuthedRequest, @Param('questionId') questionId: string) {
+    return this.questionsService.removeWrong(request.user.sub, questionId)
   }
 
   /** 新增例题（admin 添加） */

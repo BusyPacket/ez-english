@@ -12,6 +12,7 @@ import FeedbackView from '@/views/FeedbackView.vue'
 import LeaderboardView from '@/views/LeaderboardView.vue'
 import PracticeView from '@/views/PracticeView.vue'
 import FavoritesView from '@/views/FavoritesView.vue'
+import WrongQuestionsView from '@/views/WrongQuestionsView.vue'
 import { UserRole } from '@ez-english/shared'
 import { useUserStore } from '@/stores/user'
 
@@ -43,6 +44,11 @@ const router = createRouter({
       path: '/favorites',
       name: 'favorites',
       component: FavoritesView,
+    },
+    {
+      path: '/wrong',
+      name: 'wrong',
+      component: WrongQuestionsView,
     },
     {
       path: '/exam-paper',

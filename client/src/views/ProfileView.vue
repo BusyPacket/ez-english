@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { useMessage } from 'naive-ui'
 import dayjs from 'dayjs'
 import { api } from '@/api/http'
+import { useAiModels } from '@/composables/useAiModels'
 import { useUserStore, type User } from '@/stores/user'
 
 const router = useRouter()
@@ -116,9 +117,7 @@ function handleLogout() {
   router.push('/')
 }
 
-// AI 配置（API Key / 模型）
-const aiProvider = ref('deepseek')
-const aiModel = ref('deepseek-v4-flash')
+// AI 配置（API Key 及其校验/余额；公司 / 模型的逻辑统一见 useAiModels）
 const apiKeyInput = ref('')
 const hasApiKey = ref(false)
 const savingAi = ref(false)
@@ -130,75 +129,35 @@ const balanceResult = ref<{
   balances: { currency: string; total: string; granted: string; toppedUp: string }[]
 } | null>(null)
 
-interface ProviderOption {
-  value: string
-  label: string
-  platformUrl: string
-  models: { value: string; label: string }[]
-}
-
-// AI 公司与模型选项：公司从后端获取，模型实时从 DeepSeek 拉取
-const providerOptions = ref<ProviderOption[]>([])
-const aiProviderOptions = computed(() =>
-  providerOptions.value.map((p) => ({ label: p.label, value: p.value })),
-)
-
-// 实时模型（后端调 DeepSeek /models；未配置 key 时为空 → 用内置兜底）
-const liveModels = ref<{ value: string; label: string }[]>([])
-const modelSource = ref<'live' | 'fallback'>('fallback')
-const modelOptions = computed(() => {
-  if (liveModels.value.length) return liveModels.value
-  const p = providerOptions.value.find((o) => o.value === aiProvider.value)
-  return p?.models ?? []
-})
-
-// 当前所选 AI 公司的平台信息（用于「创建 key」链接，跟随公司切换）
-const currentProvider = computed(() =>
-  providerOptions.value.find((o) => o.value === aiProvider.value),
-)
-const platformName = computed(() => currentProvider.value?.label ?? 'AI 公司')
-const platformUrl = computed(() => currentProvider.value?.platformUrl ?? '')
-
-// 切换公司时，若当前模型不属于新公司，则重置为该公司的第一个模型
-function onProviderChange() {
-  if (!modelOptions.value.some((m) => m.value === aiModel.value)) {
-    aiModel.value = modelOptions.value[0]?.value ?? ''
-  }
-}
-
-/** 实时拉取可用模型（用已保存的 key 调 DeepSeek） */
-async function refreshLiveModels() {
-  try {
-    const live = await api<{
-      models: { value: string; label: string }[]
-      source: 'live' | 'fallback'
-    }>('/profile/ai-config/models')
-    liveModels.value = live.models
-    modelSource.value = live.source
-  } catch {
-    liveModels.value = []
-    modelSource.value = 'fallback'
-  }
-}
+// AI 公司与模型：状态、实时拉取与「模型不属于当前公司则回退」的规则均由 useAiModels 提供
+const {
+  aiProvider,
+  aiModel,
+  aiProviderOptions,
+  modelOptions,
+  modelSource,
+  platformName,
+  platformUrl,
+  refreshingModels,
+  loadProviders,
+  refreshLiveModels,
+  refreshModelsManually,
+  applySaved,
+  onProviderChange,
+} = useAiModels()
 
 async function loadAiConfig() {
   try {
-    // 1. 公司列表
-    const opts = await api<{ providers: ProviderOption[] }>('/profile/ai-options')
-    providerOptions.value = opts.providers
+    // 1. 公司列表（含各公司内置模型，用作兜底）
+    await loadProviders()
     // 2. 实时模型
     await refreshLiveModels()
-    // 3. 已保存配置
+    // 3. 已保存配置（applySaved 内含「模型不合法则回退第一项」）
     const cfg = await api<{ aiProvider: string; model: string; hasApiKey: boolean }>(
       '/profile/ai-config',
     )
-    aiProvider.value = cfg.aiProvider
-    aiModel.value = cfg.model
+    applySaved(cfg.aiProvider, cfg.model)
     hasApiKey.value = cfg.hasApiKey
-    // 若已保存的模型不在当前列表中，回退到第一个
-    if (!modelOptions.value.some((m) => m.value === aiModel.value)) {
-      aiModel.value = modelOptions.value[0]?.value ?? ''
-    }
   } catch {
     // 忽略加载失败
   }
@@ -351,7 +310,17 @@ onMounted(() => {
           </n-form-item>
           <n-form-item label="模型">
             <div style="width: 100%">
-              <n-select v-model:value="aiModel" :options="modelOptions" style="width: 100%" />
+              <div class="model-row">
+                <n-select v-model:value="aiModel" :options="modelOptions" class="model-select" />
+                <n-button
+                  class="model-refresh-btn"
+                  secondary
+                  :loading="refreshingModels"
+                  title="刷新模型列表"
+                  @click="refreshModelsManually(hasApiKey)"
+                  >🔄</n-button
+                >
+              </div>
               <div v-if="modelSource === 'live'" class="model-src-live">✔ 已实时获取最新模型</div>
               <div v-else class="model-src-fallback">⚠ 未配置有效 API Key，暂显示内置模型</div>
             </div>
@@ -500,6 +469,27 @@ onMounted(() => {
 
 .ai-card {
   margin-top: 16px;
+}
+
+/* 模型下拉 + 刷新按钮同一行 */
+.model-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.model-select {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* 正方形刷新按钮：宽高与默认尺寸的下拉框（34px）一致 */
+.model-refresh-btn {
+  flex: none;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  font-size: 15px;
 }
 
 .model-src-live {

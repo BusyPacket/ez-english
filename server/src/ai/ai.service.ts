@@ -1,5 +1,6 @@
 import { ForbiddenException, Injectable, InternalServerErrorException } from '@nestjs/common'
 import { DeepSeekClient, type ChatMessage } from './deepseek'
+import { AiGenerationCacheService } from './ai-generation-cache.service'
 import { ProfileService } from '../users/profile.service'
 import { QuestionsService } from '../questions/questions.service'
 import { UserService } from '../users/user.service'
@@ -60,6 +61,7 @@ export class AiService {
     private readonly profileService: ProfileService,
     private readonly userService: UserService,
     private readonly questionsService: QuestionsService,
+    private readonly aiGenerationCache: AiGenerationCacheService,
   ) {}
 
   /** 试用期检查：普通用户试用期已到则禁止使用 AI（会员/管理员豁免） */
@@ -94,7 +96,6 @@ export class AiService {
   async generatePractice(userId: string, dto: GeneratePracticeDto): Promise<GeneratedQuestion> {
     await this.assertTrialAvailable(userId)
     const { apiKey, model } = await this.profileService.getChatConfig(userId)
-    await this.profileService.assertSufficientBalance(userId, MIN_BALANCE)
 
     const typeLabel = { single: '单选题', fill: '填空题', judge: '判断题' }[dto.type]
 
@@ -115,6 +116,16 @@ export class AiService {
       }
     }
 
+    // 公共缓存按考点、题型和模型共享；命中后无需消耗用户余额。
+    const cacheKey = this.aiGenerationCache.buildPracticeKey(model, dto.point, dto.type)
+    const cachedQuestions = await this.aiGenerationCache.findPracticeQuestions(cacheKey)
+    for (const cached of cachedQuestions) {
+      if (!this.isDuplicateStem(cached.stem, existing)) return cached
+    }
+
+    // 缓存没有可用题目时，才检查余额并调用模型。
+    await this.profileService.assertSufficientBalance(userId, MIN_BALANCE)
+
     // 有限重试：最多生成 MAX_RETRY + 1 次；命中重复则把该题干加入排除列表后重新出题
     const MAX_RETRY = 2
     let lastQuestion: GeneratedQuestion | null = null
@@ -133,6 +144,7 @@ export class AiService {
       }
       lastQuestion = result.data
       if (!this.isDuplicateStem(lastQuestion.stem, existing)) {
+        await this.aiGenerationCache.addPracticeQuestion(cacheKey, lastQuestion)
         return lastQuestion
       }
       existing.push(lastQuestion.stem)

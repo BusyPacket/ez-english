@@ -29,6 +29,22 @@ export class SettingsService {
     return { days }
   }
 
+  /** 公共 AI 练习题缓存上限，未设置时默认 30 道 */
+  async getAiCacheLimit(): Promise<number> {
+    const value = await this.get('ai_cache_limit')
+    const n = value ? Number(value) : NaN
+    return Number.isFinite(n) && n >= 0 && n <= 100 ? Math.floor(n) : 30
+  }
+
+  async getAiCacheLimitConfig(): Promise<{ limit: number }> {
+    return { limit: await this.getAiCacheLimit() }
+  }
+
+  async setAiCacheLimit(limit: number) {
+    await this.set('ai_cache_limit', String(limit))
+    return { limit }
+  }
+
   /** 设置注册开关 */
   async setRegistrationOpen(open: boolean) {
     await this.set('registration_open', String(open))

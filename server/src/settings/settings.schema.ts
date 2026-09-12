@@ -13,3 +13,10 @@ export const updateTrialDaysSchema = z.object({
 })
 
 export type UpdateTrialDaysDto = z.infer<typeof updateTrialDaysSchema>
+
+/** 更新公共 AI 题目缓存上限 */
+export const updateAiCacheLimitSchema = z.object({
+  limit: z.number().int().min(0, '缓存上限不能小于 0').max(100, '缓存上限不能超过 100'),
+})
+
+export type UpdateAiCacheLimitDto = z.infer<typeof updateAiCacheLimitSchema>

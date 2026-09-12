@@ -555,6 +555,28 @@ async function saveTrialDays() {
   }
 }
 
+// 公共 AI 练习题缓存上限（0 表示关闭缓存）
+const aiCacheLimit = ref(30)
+async function fetchAiCacheLimit() {
+  try {
+    const res = await api<{ limit: number }>('/settings/ai-cache-limit')
+    aiCacheLimit.value = res.limit
+  } catch {
+    // 读取失败保持默认
+  }
+}
+async function saveAiCacheLimit() {
+  try {
+    await api('/settings/ai-cache-limit', {
+      method: 'PUT',
+      body: JSON.stringify({ limit: aiCacheLimit.value }),
+    })
+    message.success('AI 题目缓存上限已更新')
+  } catch (e) {
+    message.error((e as Error).message)
+  }
+}
+
 // —— 后台导航（桌面侧边栏 + 移动端顶部标签） ——
 type AdminTab = 'users' | 'settings' | 'feedback' | 'questions'
 
@@ -572,6 +594,7 @@ onMounted(() => {
   fetchFeedback()
   fetchRegOpen()
   fetchTrialDays()
+  fetchAiCacheLimit()
   fetchQuestions()
 })
 </script>
@@ -738,6 +761,26 @@ onMounted(() => {
                 普通用户注册后可免费使用 AI 的天数。
               </n-tooltip>
               <n-button size="small" type="primary" @click="saveTrialDays">保存</n-button>
+            </div>
+            <div class="setting-row">
+              <span class="setting-label">AI 题目缓存上限</span>
+              <n-input-number
+                v-model:value="aiCacheLimit"
+                :min="0"
+                :max="100"
+                style="width: 120px"
+              />
+              <n-tooltip
+                trigger="hover"
+                :style="{ maxWidth: '240px', whiteSpace: 'normal', lineHeight: '1.6' }"
+              >
+                <template #trigger>
+                  <span class="tip-badge" aria-label="AI 题目缓存上限说明">?</span>
+                </template>
+                同一考点、题型、模型和提示词版本最多缓存的公共题目数，按先进先出淘汰。设置为 0
+                将关闭缓存。
+              </n-tooltip>
+              <n-button size="small" type="primary" @click="saveAiCacheLimit">保存</n-button>
             </div>
           </n-card>
         </div>

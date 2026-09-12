@@ -5,8 +5,10 @@ import { Roles } from '../common/roles.decorator'
 import { UserRole } from '../users/user.schema'
 import { ZodValidationPipe } from '../common/zod-validation.pipe'
 import {
+  updateAiCacheLimitSchema,
   updateRegistrationOpenSchema,
   updateTrialDaysSchema,
+  type UpdateAiCacheLimitDto,
   type UpdateRegistrationOpenDto,
   type UpdateTrialDaysDto,
 } from './settings.schema'
@@ -46,5 +48,22 @@ export class SettingsController {
   @Roles(UserRole.Admin)
   setTrialDays(@Body(new ZodValidationPipe(updateTrialDaysSchema)) dto: UpdateTrialDaysDto) {
     return this.settingsService.setTrialDays(dto.days)
+  }
+
+  /** 公共 AI 题目缓存上限（仅管理员） */
+  @Get('ai-cache-limit')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.Admin)
+  getAiCacheLimit() {
+    return this.settingsService.getAiCacheLimitConfig()
+  }
+
+  @Put('ai-cache-limit')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.Admin)
+  setAiCacheLimit(
+    @Body(new ZodValidationPipe(updateAiCacheLimitSchema)) dto: UpdateAiCacheLimitDto,
+  ) {
+    return this.settingsService.setAiCacheLimit(dto.limit)
   }
 }

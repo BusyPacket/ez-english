@@ -1,4 +1,4 @@
-import { integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
+import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 // 用户表（Drizzle schema，单一权威定义）
 export const users = sqliteTable('users', {
@@ -69,6 +69,22 @@ export const settings = sqliteTable('settings', {
   value: text('value').notNull(),
   updatedAt: text('updated_at').notNull(),
 })
+
+// 公共 AI 练习题缓存池：同一缓存键最多保留 30 道题，按 createdAt 先进先出淘汰
+export const aiQuestionCache = sqliteTable(
+  'ai_question_cache',
+  {
+    id: text('id').primaryKey(),
+    cacheKey: text('cache_key').notNull(),
+    stemHash: text('stem_hash').notNull(),
+    payload: text('payload').notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => [
+    uniqueIndex('ai_question_cache_key_stem_uk').on(table.cacheKey, table.stemHash),
+    index('ai_question_cache_key_created_idx').on(table.cacheKey, table.createdAt),
+  ],
+)
 
 // 收藏夹表（用户收藏的 AI 生成题目快照）
 export const favorites = sqliteTable('favorites', {
